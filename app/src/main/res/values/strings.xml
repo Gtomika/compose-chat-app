@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Gáspár Chat</string>
+
+    <string name="login_prompt">Kérlek jelentkezz be!</string>
+    <string name="login_email">Email cím</string>
+    <string name="login_password">Jelszó</string>
+    <string name="login">Bejelentkezés</string>
+    <string name="login_redirect_to_register">Nem vagy regisztrálva?</string>
+    <string name="login_invalid_data">Hibás adatok!</string>
+    <string name="login_cannot_be_empty">Nem lehet üres!</string>
+    <string name="login_fail">Sikertelen bejelentkezés!</string>
+
+    <string name="register_prompt">Regisztálj fiókot!</string>
+    <string name="register_username">Felhasználónév (nem kötelező)</string>
+    <string name="register_optional">Ez nem kötelező</string>
+    <string name="register_password_again">Jelszó újra</string>
+    <string name="register">Regisztáció</string>
+    <string name="register_redirect_to_login">Már van profilod?</string>
+    <string name="register_password_incorrect_length">%1$d és %2$d közti jelszóhossz kell!</string>
+    <string name="register_password_not_matching">A jelszavak nem egyeznek!</string>
+    <string name="register_whitespace_illegal">Nem tartalmazhat szóközt!</string>
+    <string name="register_email_invalid">Érvénytelen email!</string>
+    <string name="register_email_in_use">Ez az email már használatban van!</string>
+    <string name="register_unknown_error">Ismeretlen hiba. Próbáld meg később!</string>
+
+</resources>
