@@ -122,6 +122,11 @@ class RegisterViewModel @Inject constructor(
             _passwordAgain.value = passwordAgain.value.copy(isError = true, errorMessage = message)
             return
         }
+        if(name.value.input.isNotBlank() && name.value.input.length !in NameLimits.MIN..NameLimits.MAX) {
+            val message = context.getString(R.string.register_name_incorrect_length, NameLimits.MIN, NameLimits.MAX)
+            _name.value = name.value.copy(isError = true, errorMessage = message)
+            errorsFound = true
+        }
         //don't continue if errors
         if(errorsFound) return
         //pass to firebase

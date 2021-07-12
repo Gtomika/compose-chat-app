@@ -16,6 +16,9 @@ object NavDest {
 
     const val HOME = "home"
 
+    const val PROFILE = "profile"
+
+    const val SEARCH = "search"
 }
 
 /**
@@ -24,6 +27,14 @@ object NavDest {
 object PasswordLimit {
 
     const val MIN = 6 //at least 6 is required by FIREBASE AUTH
+
+    const val MAX = 30
+
+}
+
+object NameLimits {
+
+    const val MIN = 3
 
     const val MAX = 30
 

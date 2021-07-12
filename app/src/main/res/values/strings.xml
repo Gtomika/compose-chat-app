@@ -1,5 +1,8 @@
 <resources>
-    <string name="app_name">Gáspár Chat</string>
+    <string name="app_name">G-Chat</string>
+    <string name="yes">Igen</string>
+    <string name="no">Nem</string>
+    <string name="info">Infó</string>
 
     <string name="login_prompt">Kérlek jelentkezz be!</string>
     <string name="login_email">Email cím</string>
@@ -9,6 +12,7 @@
     <string name="login_invalid_data">Hibás adatok!</string>
     <string name="login_cannot_be_empty">Nem lehet üres!</string>
     <string name="login_fail">Sikertelen bejelentkezés!</string>
+    <string name="login_invalid_data_label">Hibás email vagy jelszó!</string>
 
     <string name="register_prompt">Regisztálj fiókot!</string>
     <string name="register_username">Felhasználónév (nem kötelező)</string>
@@ -22,5 +26,24 @@
     <string name="register_email_invalid">Érvénytelen email!</string>
     <string name="register_email_in_use">Ez az email már használatban van!</string>
     <string name="register_unknown_error">Ismeretlen hiba. Próbáld meg később!</string>
+    <string name="register_name_incorrect_length">A név min. %1$d és max. %2$d karakter lehet</string>
+
+    <string name="home_title">Csevegések</string>
+
+    <string name="profile_title">Profil</string>
+    <string name="profile_of">%1$s profilja</string>
+    <string name="profile_back">Vissza</string>
+    <string name="profile_log_out">Kijelentkezés</string>
+    <string name="profile_log_out_confirm">Biztosan ki akarasz jelentkezni?</string>
+    <string name="profile_update_display_name">Felhasználónév megváltoztatása</string>
+    <string name="profile_display_name">Felhasználónév</string>
+    <string name="profile_save">Mentés</string>
+    <string name="profile_display_name_info">
+        Ezzel a névvel lát a többi felhasználó. Nem kötelező megadni. Ha üresen hagyod, akkor az email címedből lesz létrehozva.
+    </string>
+    <string name="profile_display_name_update_success">A neved megváltozott!</string>
+    <string name="profile_display_name_update_fail">Nem sikerült megváltoztatni a nevedet!</string>
+
+    <string name="search_title">Keresés</string>
 
 </resources>

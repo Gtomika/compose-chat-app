@@ -2,7 +2,6 @@ package com.gaspar.gasparchat.viewmodel
 
 import android.content.Context
 import androidx.compose.material.SnackbarDuration
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.NavDest
@@ -11,7 +10,6 @@ import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.SnackbarDispatcher
 import com.gaspar.gasparchat.model.InputField
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,12 +56,14 @@ class LoginViewModel @Inject constructor(
     val loading: StateFlow<Boolean> = _loading
 
     fun onEmailChanged(newEmailValue: String) {
-        _email.value = _email.value.copy(input = newEmailValue, isError = false)
+        _email.value = email.value.copy(input = newEmailValue, isError = false)
+        _password.value = password.value.copy(isError = false)
         loginFailed = false
     }
 
     fun onPasswordChanged(newPasswordValue: String) {
-        _password.value = _password.value.copy(input = newPasswordValue, isError = false)
+        _password.value = password.value.copy(input = newPasswordValue, isError = false)
+        _email.value = email.value.copy(isError = false)
         loginFailed = false
     }
 
@@ -113,6 +113,9 @@ class LoginViewModel @Inject constructor(
                 } else {
                     loginFailed = true
                     //handle some errors
+                    val labelMessage = context.getString(R.string.login_invalid_data_label)
+                    _email.value = this.email.value.copy(isError = true, errorMessage = labelMessage)
+                    _password.value = this.password.value.copy(isError = true, errorMessage = labelMessage)
                     val message = context.getString(R.string.login_fail)
                     showSnackbar(message = message)
                 }

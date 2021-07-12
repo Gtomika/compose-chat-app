@@ -10,6 +10,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -26,12 +27,13 @@ import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.viewmodel.RegisterViewModel
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 @ExperimentalComposeUiApi
 @Composable
 fun RegisterContent(
-    viewModel: RegisterViewModel,
-    lifecycleOwner: LifecycleOwner
+    viewModel: RegisterViewModel
 ) {
     val scaffoldState = rememberScaffoldState()
     Scaffold(
@@ -46,9 +48,13 @@ fun RegisterContent(
         }
     )
     //watch for snackbar
-    viewModel.snackbarDispatcher.snackbarEmitter.observe(lifecycleOwner) { snackbarCommand ->
-        snackbarCommand.invoke(scaffoldState.snackbarHostState)
-    }
+    LaunchedEffect(key1 = viewModel, block = {
+        launch {
+            viewModel.snackbarDispatcher.snackbarEmitter.collect { snackbarCommand ->
+                snackbarCommand?.invoke(scaffoldState.snackbarHostState)
+            }
+        }
+    })
 }
 
 @ExperimentalComposeUiApi
@@ -119,7 +125,7 @@ fun NameInput(
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Person,
-                contentDescription = stringResource(id = R.string.login_email)
+                contentDescription = stringResource(id = R.string.register_username)
             ) },
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Text,
@@ -130,9 +136,9 @@ fun NameInput(
             onNext = { focusRequesterNext?.requestFocus() }
         ),
         modifier = Modifier.padding(8.dp)
-            .focusOrder(focusRequester) {
-                focusRequesterNext?.requestFocus()
-        },
+            .focusOrder(focusRequester) { focusRequesterNext?.requestFocus() },
+        maxLines = 1,
+        isError = name.value.isError
     )
 }
 

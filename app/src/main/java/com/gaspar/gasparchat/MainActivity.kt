@@ -3,9 +3,11 @@ package com.gaspar.gasparchat
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.compose.NavHost
@@ -14,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.gaspar.gasparchat.ui.theme.GasparChatTheme
 import com.gaspar.gasparchat.view.HomeContent
 import com.gaspar.gasparchat.view.LoginContent
+import com.gaspar.gasparchat.view.ProfileContent
 import com.gaspar.gasparchat.view.RegisterContent
 import com.gaspar.gasparchat.viewmodel.LoginViewModel
 import com.gaspar.gasparchat.viewmodel.RegisterViewModel
@@ -29,6 +32,8 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var navigationDispatcher: NavigationDispatcher
 
+    @ExperimentalComposeUiApi
+    @ExperimentalAnimationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -46,6 +51,8 @@ class MainActivity : ComponentActivity() {
  * @param navigationDispatcher Object used to listen for incoming navigation events.
  * @param lifecycleOwner The activity's lifecycle owner.
  */
+@ExperimentalAnimationApi
+@ExperimentalComposeUiApi
 @Composable
 fun MainActivityContent(
     navigationDispatcher: NavigationDispatcher,
@@ -60,16 +67,20 @@ fun MainActivityContent(
                 //redirect to login screen
                 composable(route = NavDest.LOGIN) {
                     val viewModel = hiltViewModel<LoginViewModel>()
-                    LoginContent(viewModel, lifecycleOwner)
+                    LoginContent(viewModel)
                 }
                 //redirect to register screen
                 composable(route = NavDest.REGISTER) {
                     val viewModel = hiltViewModel<RegisterViewModel>()
-                    RegisterContent(viewModel, lifecycleOwner)
+                    RegisterContent(viewModel)
                 }
                 //redirect to home
                 composable(route = NavDest.HOME) {
-                    HomeContent(lifecycleOwner = lifecycleOwner)
+                    HomeContent()
+                }
+                //redirect to profile
+                composable(route = NavDest.PROFILE) {
+                    ProfileContent()
                 }
             }
             //observe incoming navigation commands
