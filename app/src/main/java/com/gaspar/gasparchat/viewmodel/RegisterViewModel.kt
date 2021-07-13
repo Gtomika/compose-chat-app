@@ -46,6 +46,9 @@ class RegisterViewModel @Inject constructor(
     private val _name = MutableStateFlow(InputField())
     val name: StateFlow<InputField> = _name
 
+    private val _errorsPresent = MutableStateFlow(false)
+    val errorsPresent: StateFlow<Boolean> = _errorsPresent
+
     /**
      * If an operation is in progress.
      */
@@ -59,78 +62,99 @@ class RegisterViewModel @Inject constructor(
     private var registerFailed = false
 
     fun onEmailChanged(newEmailValue: String) {
-        _email.value = _email.value.copy(input = newEmailValue, isError = false)
+        if(newEmailValue.isBlank()) {
+            val message = context.getString(R.string.login_cannot_be_empty)
+            _email.value = email.value.copy(input = newEmailValue, isError = true, errorMessage = message)
+        } else {
+            _email.value = _email.value.copy(input = newEmailValue, isError = false)
+        }
         registerFailed = false //clear fail
+        _errorsPresent.value = errorsInInputPresent()
     }
 
     fun onPasswordChanged(newPasswordValue: String) {
-        _password.value = _password.value.copy(input = newPasswordValue, isError = false)
+        when {
+            newPasswordValue.isBlank() -> {
+                val message = context.getString(R.string.login_cannot_be_empty)
+                _password.value = password.value.copy(input = newPasswordValue, isError = true, errorMessage = message)
+            }
+            newPasswordValue.contains(' ') -> {
+                val message = context.getString(R.string.register_whitespace_illegal)
+                _password.value = password.value.copy(input = newPasswordValue, isError = true, errorMessage = message)
+            }
+            newPasswordValue.length !in PasswordLimit.MIN..PasswordLimit.MAX -> {
+                //they are matching here
+                val message = context.getString(R.string.register_password_incorrect_length, PasswordLimit.MIN, PasswordLimit.MAX)
+                _password.value = password.value.copy(input = newPasswordValue, isError = true, errorMessage = message)
+            }
+            else -> {
+                _password.value = _password.value.copy(input = newPasswordValue, isError = false)
+            }
+        }
         registerFailed = false //clear fail
+        _errorsPresent.value = errorsInInputPresent()
     }
 
     fun onPasswordAgainChanged(newPasswordAgainValue: String) {
-        _passwordAgain.value = _passwordAgain.value.copy(input = newPasswordAgainValue, isError = false)
+        when {
+            newPasswordAgainValue.isBlank() -> {
+                val message = context.getString(R.string.login_cannot_be_empty)
+                _passwordAgain.value = passwordAgain.value.copy(input = newPasswordAgainValue, isError = true, errorMessage = message)
+            }
+            newPasswordAgainValue.contains(' ') -> {
+                val message = context.getString(R.string.register_whitespace_illegal)
+                _passwordAgain.value = passwordAgain.value.copy(input = newPasswordAgainValue, isError = true, errorMessage = message)
+            }
+            newPasswordAgainValue.length !in PasswordLimit.MIN..PasswordLimit.MAX -> {
+                //they are matching here
+                val message = context.getString(R.string.register_password_incorrect_length, PasswordLimit.MIN, PasswordLimit.MAX)
+                _passwordAgain.value = passwordAgain.value.copy(input = newPasswordAgainValue, isError = true, errorMessage = message)
+            }
+            else -> {
+                _passwordAgain.value = _passwordAgain.value.copy(input = newPasswordAgainValue, isError = false)
+            }
+        }
         registerFailed = false //clear fail
+        _errorsPresent.value = errorsInInputPresent()
     }
 
     fun onNameChanged(newNameValue: String) {
-        _name.value = _name.value.copy(input = newNameValue, isError = false)
+        if(newNameValue.isNotBlank() && newNameValue.length !in NameLimits.MIN..NameLimits.MAX) {
+            val message = context.getString(R.string.register_name_incorrect_length, NameLimits.MIN, NameLimits.MAX)
+            _name.value = name.value.copy(input = newNameValue, isError = true, errorMessage = message)
+        } else {
+            _name.value = _name.value.copy(input = newNameValue, isError = false)
+        }
         registerFailed = false //clear fail
+        _errorsPresent.value = errorsInInputPresent()
     }
 
     fun onRegisterButtonClicked() {
-        //check if errors are already displayed
-        if(registerFailed || email.value.isError || password.value.isError || passwordAgain.value.isError || name.value.isError) {
+        //don't have to worry about errors: button is disabled in that case
+        //check if any of the fields is empty but does not have error: this is the initial state
+        if(emptyRequiredInputsPresent()) {
             val message = context.getString(R.string.login_invalid_data)
             showSnackbar(message = message)
             return
         }
-        var errorsFound = false
-        var passwordEmpty = false
-        //errors are not displayed, but input may be invalid
-        if(email.value.input.isBlank()) {
-            _email.value = email.value.copy(isError = true, errorMessage = context.getString(R.string.login_cannot_be_empty))
-            errorsFound = true
-        }
-        if(password.value.input.isBlank()) {
-            _password.value = password.value.copy(isError = true, errorMessage = context.getString(R.string.login_cannot_be_empty))
-            errorsFound = true
-            passwordEmpty = true
-        }
-        if(passwordAgain.value.input.isBlank()) {
-            _passwordAgain.value = passwordAgain.value.copy(isError = true, errorMessage = context.getString(R.string.login_cannot_be_empty))
-            errorsFound = true
-            passwordEmpty = true
-        }
-        if(passwordEmpty) return
         //password conditions: match
         if(password.value.input != passwordAgain.value.input) {
             _password.value = password.value.copy(isError = true, errorMessage = context.getString(R.string.register_password_not_matching))
             _passwordAgain.value = passwordAgain.value.copy(isError = true, errorMessage = context.getString(R.string.register_password_not_matching))
             return
         }
-        if(password.value.input.length !in PasswordLimit.MIN..PasswordLimit.MAX) {
-            //they are matching here
-            val message = context.getString(R.string.register_password_incorrect_length, PasswordLimit.MIN, PasswordLimit.MAX)
-            _password.value = password.value.copy(isError = true, errorMessage = message)
-            _passwordAgain.value = passwordAgain.value.copy(isError = true, errorMessage = message)
-            return
-        }
-        if(password.value.input.contains(' ')) {
-            val message = context.getString(R.string.register_whitespace_illegal)
-            _password.value = password.value.copy(isError = true, errorMessage = message)
-            _passwordAgain.value = passwordAgain.value.copy(isError = true, errorMessage = message)
-            return
-        }
-        if(name.value.input.isNotBlank() && name.value.input.length !in NameLimits.MIN..NameLimits.MAX) {
-            val message = context.getString(R.string.register_name_incorrect_length, NameLimits.MIN, NameLimits.MAX)
-            _name.value = name.value.copy(isError = true, errorMessage = message)
-            errorsFound = true
-        }
-        //don't continue if errors
-        if(errorsFound) return
         //pass to firebase
         firebaseSignUp(email = email.value.input, password = password.value.input)
+    }
+
+    private fun errorsInInputPresent(): Boolean {
+        return registerFailed || email.value.isError || password.value.isError ||
+                passwordAgain.value.isError || name.value.isError
+    }
+
+    private fun emptyRequiredInputsPresent(): Boolean {
+        return email.value.input.isBlank() || password.value.input.isBlank()
+                || passwordAgain.value.input.isBlank()
     }
 
     /**

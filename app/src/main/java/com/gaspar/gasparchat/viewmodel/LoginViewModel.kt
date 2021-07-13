@@ -44,6 +44,9 @@ class LoginViewModel @Inject constructor(
     private val _password = MutableStateFlow(InputField())
     val password: StateFlow<InputField> = _password
 
+    private val _errorsPresent = MutableStateFlow(false)
+    val errorsPresent: StateFlow<Boolean> = _errorsPresent
+
     /**
      * True if a recent login failed and the user has not updated anything since then.
      */
@@ -56,15 +59,35 @@ class LoginViewModel @Inject constructor(
     val loading: StateFlow<Boolean> = _loading
 
     fun onEmailChanged(newEmailValue: String) {
-        _email.value = email.value.copy(input = newEmailValue, isError = false)
-        _password.value = password.value.copy(isError = false)
+        if(newEmailValue.isBlank()) {
+            val message = context.getString(R.string.login_cannot_be_empty)
+            _email.value = email.value.copy(input = newEmailValue, isError = true, errorMessage = message)
+        } else {
+            _email.value = email.value.copy(input = newEmailValue, isError = false)
+        }
+        if(password.value.input.isNotBlank()) _password.value = password.value.copy(isError = false)
         loginFailed = false
+        _errorsPresent.value = errorsPresentInInput()
     }
 
     fun onPasswordChanged(newPasswordValue: String) {
-        _password.value = password.value.copy(input = newPasswordValue, isError = false)
-        _email.value = email.value.copy(isError = false)
+        if(newPasswordValue.isBlank()) {
+            val message = context.getString(R.string.login_cannot_be_empty)
+            _password.value = password.value.copy(input = newPasswordValue, isError = true, errorMessage = message)
+        } else {
+            _password.value = password.value.copy(input = newPasswordValue, isError = false)
+        }
+        if(email.value.input.isNotBlank()) _email.value = email.value.copy(isError = false)
         loginFailed = false
+        _errorsPresent.value = errorsPresentInInput()
+    }
+
+    private fun errorsPresentInInput(): Boolean {
+        return email.value.isError || password.value.isError
+    }
+
+    private fun emptyRequiredInputsPresent(): Boolean {
+        return email.value.input.isBlank() || password.value.input.isBlank()
     }
 
     /**
@@ -72,23 +95,11 @@ class LoginViewModel @Inject constructor(
      */
     fun onLoginButtonClicked() {
         //check for existing errors
-        if(loginFailed || email.value.isError || password.value.isError) {
+        if(loginFailed || emptyRequiredInputsPresent()) {
             val message = context.getString(R.string.login_invalid_data)
             showSnackbar(message)
             return
         }
-        var errorsFound = false
-        //user sees no errors, check his input
-        if(email.value.input.isBlank()) {
-            _email.value = email.value.copy(isError = true, errorMessage = context.getString(R.string.login_cannot_be_empty))
-            errorsFound = true
-        }
-        if(password.value.input.isBlank()) {
-            _password.value = password.value.copy(isError = true, errorMessage = context.getString(R.string.login_cannot_be_empty))
-            errorsFound = true
-        }
-        //don't continue with errors
-        if(errorsFound) return
         //no errors, call firebase
         logInWithFirebase(email.value.input, password.value.input)
     }

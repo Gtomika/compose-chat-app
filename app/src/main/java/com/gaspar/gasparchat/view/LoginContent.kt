@@ -2,10 +2,9 @@ package com.gaspar.gasparchat.view
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -17,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusOrder
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -25,8 +25,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.viewmodel.LoginViewModel
@@ -44,11 +42,8 @@ fun LoginContent(
     Scaffold(
         scaffoldState = scaffoldState,
         content = {
-            val loading = viewModel.loading.collectAsState()
-            AnimatedVisibility(visible = loading.value) {
-                LoadingIndicator()
-            }
-            AnimatedVisibility(visible = !loading.value) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                LoadingIndicator(viewModel.loading)
                 LoginBox(viewModel = viewModel)
             }
         }
@@ -68,10 +63,12 @@ fun LoginContent(
 fun LoginBox(
    viewModel: LoginViewModel
 ) {
+    val loading = viewModel.loading.collectAsState()
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize()
+            .alpha(if(loading.value) 0.5f else 1f),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         val (focusRequester1, focusRequester2) = FocusRequester.createRefs()
         Prompt(promptText = stringResource(id = R.string.login_prompt))
@@ -87,10 +84,12 @@ fun LoginBox(
             onPasswordChanged = viewModel::onPasswordChanged,
             focusRequester = focusRequester2
         )
+        val errorsPresent = viewModel.errorsPresent.collectAsState()
         Button(
             onClick = viewModel::onLoginButtonClicked,
             content = { Text(stringResource(id = R.string.login)) },
-            modifier = Modifier.padding(8.dp)
+            modifier = Modifier.padding(8.dp),
+            enabled = !errorsPresent.value
         )
         RedirectToRegisterButton(onRedirectToRegisterClicked = viewModel::onRedirectToRegisterClicked)
     }
@@ -136,15 +135,24 @@ fun EmailInput(
             onNext = { focusRequesterNext?.requestFocus() }
         ),
         modifier = Modifier
-            .padding(8.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .focusOrder(focusRequester) {
                 focusRequesterNext?.requestFocus()
-            },
+            }
+            .fillMaxWidth(),
         isError = email.value.isError,
         maxLines = 1
     )
 }
 
+/**
+ * Creates a password field. Validates password.
+ * @param passwordInputField State flow of the [InputField] that belongs to this password.
+ * @param labelText Displayed label text, if there is no error.
+ * @param onPasswordChanged Called with the new value if the user types.
+ * @param focusRequester [FocusRequester] of this field.
+ * @param focusRequesterNext [FocusRequester] of the next field, or null if there is none.
+ */
 @ExperimentalComposeUiApi
 @Composable
 fun PasswordInput(
@@ -172,10 +180,11 @@ fun PasswordInput(
             onNext = { focusRequesterNext?.requestFocus() }
         ),
         modifier = Modifier
-            .padding(8.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .focusOrder(focusRequester) {
                 focusRequesterNext?.requestFocus()
-            },
+            }
+            .fillMaxWidth(),
         visualTransformation = PasswordVisualTransformation(),
         isError = password.value.isError,
         maxLines = 1
@@ -192,15 +201,26 @@ fun RedirectToRegisterButton(onRedirectToRegisterClicked: () -> Unit) {
 }
 
 /**
- * Shows indeterminate loading. Takes up all the space in what container it is used in.
+ * Shows indeterminate loading. Takes up all the space in what container it is used in, so it should be placed
+ * above the content, with a [Box]. Has animated visibility.
  */
+@ExperimentalAnimationApi
 @Composable
-fun LoadingIndicator() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+fun LoadingIndicator(
+    loadingFlow: StateFlow<Boolean>
+) {
+    val loading = loadingFlow.collectAsState()
+    AnimatedVisibility(
+        visible = loading.value,
+        enter = fadeIn(),
+        exit = fadeOut()
     ) {
-        CircularProgressIndicator()
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator()
+        }
     }
 }

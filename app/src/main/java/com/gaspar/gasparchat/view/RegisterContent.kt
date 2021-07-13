@@ -1,9 +1,7 @@
 package com.gaspar.gasparchat.view
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -22,7 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.LifecycleOwner
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.viewmodel.RegisterViewModel
@@ -30,6 +27,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
+@ExperimentalAnimationApi
 @ExperimentalComposeUiApi
 @Composable
 fun RegisterContent(
@@ -39,10 +37,8 @@ fun RegisterContent(
     Scaffold(
         scaffoldState = scaffoldState,
         content = {
-            val loading = viewModel.loading.collectAsState()
-            if(loading.value) {
-                LoadingIndicator()
-            } else {
+            Box(modifier = Modifier.fillMaxSize()) {
+                LoadingIndicator(viewModel.loading)
                 RegisterBox(viewModel = viewModel)
             }
         }
@@ -95,10 +91,12 @@ fun RegisterBox(
             onNameChanged = viewModel::onNameChanged,
             focusRequester = focusRequester4
         )
+        val errorsPresent = viewModel.errorsPresent.collectAsState()
         Button(
             onClick = viewModel::onRegisterButtonClicked,
             content = { Text(stringResource(id = R.string.register)) },
-            modifier = Modifier.padding(8.dp)
+            modifier = Modifier.padding(8.dp),
+            enabled = !errorsPresent.value
         )
         RedirectToLoginButton(onRedirectToLoginClicked = viewModel::onRedirectToLoginClicked)
     }
@@ -135,8 +133,10 @@ fun NameInput(
             onDone = { keyboardController?.hide() },
             onNext = { focusRequesterNext?.requestFocus() }
         ),
-        modifier = Modifier.padding(8.dp)
-            .focusOrder(focusRequester) { focusRequesterNext?.requestFocus() },
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .focusOrder(focusRequester) { focusRequesterNext?.requestFocus() }
+            .fillMaxWidth(),
         maxLines = 1,
         isError = name.value.isError
     )

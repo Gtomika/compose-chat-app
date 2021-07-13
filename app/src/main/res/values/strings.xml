@@ -43,6 +43,17 @@
     </string>
     <string name="profile_display_name_update_success">A neved megváltozott!</string>
     <string name="profile_display_name_update_fail">Nem sikerült megváltoztatni a nevedet!</string>
+    <string name="profile_update_password">Jelszó megváltoztatása</string>
+    <string name="profile_update_password_new">Új jelszó</string>
+    <string name="profile_update_password_new_again">Új jelszó ismét</string>
+    <string name="profile_update_password_success">A jelszavad megváltoztott!</string>
+    <string name="profile_update_password_fail">Nem sikerült a jelszócsere!</string>
+    <string name="profile_update_password_old_incorrect">A megadott jelenlegi jelszavad nem stimmel!</string>
+
+    <string name="authenticate_dialog_title">Megerősítés</string>
+    <string name="authenticate_dialog_cancel">Mégse</string>
+    <string name="authenticate_dialog_confirm">OK</string>
+    <string name="authneticate_dialog_current_password">Jelenlegi jelszó</string>
 
     <string name="search_title">Keresés</string>
 

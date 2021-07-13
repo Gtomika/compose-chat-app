@@ -1,14 +1,17 @@
 package com.gaspar.gasparchat.view
 
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.LifecycleOwner
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.viewmodel.HomeViewModel
 import kotlinx.coroutines.flow.collect
@@ -16,8 +19,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Contents of the home screen.
- * @param lifecycleOwner Lifecycle owner used to listen to events.
  */
+@ExperimentalAnimationApi
 @Composable
 fun HomeContent() {
     val viewModel = hiltViewModel<HomeViewModel>()
@@ -37,7 +40,10 @@ fun HomeContent() {
             )
         },
         content = {
-            Text(firebaseUser.displayName!!)
+            Box(modifier = Modifier.fillMaxWidth()) {
+                LoadingIndicator(loadingFlow = viewModel.loading)
+                Text(firebaseUser.displayName!!) //TODO: when replaced with real content, set alpha according to loading
+            }
         }
     )
     //watch for snackbar

@@ -18,6 +18,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -42,32 +45,18 @@ fun ProfileContent() {
         viewModel.redirectToLogin()
         return
     }
-
-    val displayName = viewModel.displayName.collectAsState()
-    val loading = viewModel.loading.collectAsState()
-
     val scaffoldState = rememberScaffoldState()
     Scaffold(
         scaffoldState = scaffoldState,
         topBar = {
-            ProfileTopBar(
-                displayName = displayName.value,
-                onBackClicked = viewModel::goBack,
-                onLogoutClicked = viewModel::displayLogoutDialog,
-                onLogoutDismissed = viewModel::hideLogoutDialog,
-                onLogoutConfirmed = viewModel::onLogoutConfirmed,
-                viewModel.showLogoutDialog
-            )
+            ProfileTopBar(viewModel = viewModel)
         }
     ) {
-        AnimatedVisibility(visible = loading.value) {
-            LoadingIndicator()
-        }
-        AnimatedVisibility(visible = !loading.value) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            LoadingIndicator(viewModel.loading)
             ProfileBody(viewModel = viewModel)
         }
     }
-
     //watch for snackbar
     LaunchedEffect(key1 = viewModel, block = {
         launch {
@@ -78,22 +67,19 @@ fun ProfileContent() {
     })
 }
 
+@ExperimentalComposeUiApi
 @ExperimentalAnimationApi
 @Composable
-fun ProfileTopBar(
-    displayName: String,
-    onBackClicked: () -> Unit,
-    onLogoutClicked: () -> Unit,
-    onLogoutDismissed: () -> Unit,
-    onLogoutConfirmed: () -> Unit,
-    showLogoutFlow: StateFlow<Boolean>
-) {
-    val showLogoutDialog = showLogoutFlow.collectAsState()
-    val title = stringResource(id = R.string.profile_of, formatArgs = arrayOf(displayName))
+fun ProfileTopBar(viewModel: ProfileViewModel) {
+    val showLogoutDialog = viewModel.showLogoutDialog.collectAsState()
+    val showAuthenticateDialog = viewModel.showAuthenticateDialog.collectAsState()
+    val displayName = viewModel.displayName.collectAsState()
+    val title = stringResource(id = R.string.profile_of, formatArgs = arrayOf(displayName.value))
+
     TopAppBar(
         title = { Text(text = title) },
         navigationIcon = {
-            IconButton(onClick = onBackClicked) {
+            IconButton(onClick = viewModel::goBack) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack, 
                     contentDescription = stringResource(id = R.string.profile_back)
@@ -101,7 +87,7 @@ fun ProfileTopBar(
             }
         },
         actions = {
-            IconButton(onClick = onLogoutClicked) {
+            IconButton(onClick = viewModel::displayLogoutDialog) {
                 Icon(
                     imageVector = Icons.Default.ExitToApp,
                     contentDescription = stringResource(id = R.string.profile_log_out)
@@ -109,11 +95,16 @@ fun ProfileTopBar(
             }
         }
     )
-    //alert dialog
-    AnimatedVisibility(visible = showLogoutDialog.value) {
+    //logout dialog
+    if(showLogoutDialog.value) {
         LogoutDialog(
-            onLogoutDismissed = onLogoutDismissed,
-            onLogoutConfirmed = onLogoutConfirmed
+            onLogoutDismissed = viewModel::hideLogoutDialog,
+            onLogoutConfirmed = viewModel::onLogoutConfirmed
+        )
+    } else if(showAuthenticateDialog.value) {
+        AuthenticateDialogContent(
+            onDialogDismissed = viewModel::hideAuthenticateDialog,
+            onDialogConfirmed = viewModel::onUpdatePassword
         )
     }
 }
@@ -133,13 +124,15 @@ fun LogoutDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onLogoutConfirmed) {
+            Button(onClick = onLogoutConfirmed) {
                 Text(text = stringResource(id = R.string.yes))
             }
         },
         modifier = Modifier.padding(16.dp)
     )
 }
+
+
 
 @ExperimentalAnimationApi
 @ExperimentalComposeUiApi
@@ -148,10 +141,12 @@ fun ProfileBody(
     viewModel: ProfileViewModel
 ) {
     val scrollState = rememberScrollState()
+    val loading = viewModel.loading.collectAsState()
     Column( //not many composables here, no need for a lazy column
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(scrollState),
+            .verticalScroll(scrollState)
+            .alpha(if (loading.value) 0.5f else 1f),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Top,
     ) {
@@ -162,6 +157,7 @@ fun ProfileBody(
             onUpdateDisplayName = viewModel::onUpdateDisplayName,
             onShowInfoCheckedChanged = viewModel::onShowDisplayNameInfoCheckedChanged
         )
+        UpdatePasswordContent(viewModel = viewModel)
     }
 }
 
@@ -250,6 +246,55 @@ fun DisplayNameChanger(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 )
+            }
+        }
+    }
+}
+
+@ExperimentalComposeUiApi
+@Composable
+fun UpdatePasswordContent(viewModel: ProfileViewModel) {
+    Card(modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Column(
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.Top
+        ) {
+            val newPassword = viewModel.newPassword.collectAsState()
+            val newPasswordAgain = viewModel.newPasswordAgain.collectAsState()
+            val (focusRequester1, focusRequester2) = FocusRequester.createRefs()
+
+            Text(
+                text = stringResource(id = R.string.profile_update_password),
+                style = MaterialTheme.typography.subtitle1,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            PasswordInput(
+                passwordInputField = viewModel.newPassword,
+                labelText = stringResource(id = R.string.profile_update_password_new),
+                onPasswordChanged = viewModel::onNewPasswordChanged,
+                focusRequester = focusRequester1,
+                focusRequesterNext = focusRequester2
+            )
+            PasswordInput(
+                passwordInputField = viewModel.newPasswordAgain,
+                labelText = stringResource(id = R.string.profile_update_password_new_again),
+                onPasswordChanged = viewModel::onNewPasswordAgainChanged,
+                focusRequester = focusRequester2,
+                focusRequesterNext = null
+            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = viewModel::checkNewPasswords,
+                    enabled = !newPassword.value.isError && !newPasswordAgain.value.isError &&
+                                newPassword.value.input.isNotBlank() && newPasswordAgain.value.input.isNotBlank(),
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .align(Alignment.CenterEnd)
+                ) {
+                    Text(text = stringResource(id = R.string.profile_save))
+                }
             }
         }
     }
