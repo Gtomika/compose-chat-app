@@ -28,7 +28,9 @@
     <string name="register_unknown_error">Ismeretlen hiba. Próbáld meg később!</string>
     <string name="register_name_incorrect_length">A név min. %1$d és max. %2$d karakter lehet</string>
 
-    <string name="home_title">Csevegések</string>
+    <string name="home_title">Üdv, %1$s!</string>
+    <string name="home_chats">Csevegések</string>
+    <string name="home_contacts">Kapcsolatok</string>
 
     <string name="profile_title">Profil</string>
     <string name="profile_of">%1$s profilja</string>
@@ -65,5 +67,8 @@
     <string name="search_results_empty">Nincsenek keresési eredmények.</string>
     <string name="search_profile_image_description">%1$s profilképe</string>
     <string name="search_failed">Hiba a keresés közben!</string>
+    <string name="search_add_contact_description">Felvétel kapcsolatként</string>
+    <string name="search_added_as_contact">%1$s-t felvetted kapcsolatként!</string>
+    <string name="search_already_contact">Ismered őt!</string>
 
 </resources>

@@ -26,7 +26,14 @@ data class User(
      * [ChatRoom] uid-s that this user is part of.
      */
     @PropertyName(FirestoreConstants.USER_CHAT_ROOMS)
-    var chatRooms: List<String> = listOf()
+    var chatRooms: List<String> = listOf(),
+
+    /**
+     * Contacts ([User] uid-s) of this user. Everyone who this user ever chatted with/been in a common group is a contact.
+     * Moreover, the user can manually add contacts from the search screen.
+     */
+    @PropertyName(FirestoreConstants.USER_CONTACTS)
+    val contacts: List<String> = listOf()
 
     //TODO: maybe image URL, other stuff
 )

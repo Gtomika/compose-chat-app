@@ -9,12 +9,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -27,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.model.User
+import com.gaspar.gasparchat.model.isContactOf
 import com.gaspar.gasparchat.viewmodel.SearchViewModel
 import com.gaspar.gasparchat.viewmodel.StringMethod
 import com.gaspar.gasparchat.viewmodel.VoidMethod
@@ -92,10 +92,13 @@ fun SearchBody(viewModel: SearchViewModel) {
             //there are results to be displayed
             LazyColumn {
                 itemsIndexed(searchResult.value) { position: Int, user: User ->
+                    val isContact = remember(user) { mutableStateOf(isContactOf(viewModel.user!!, user)) }
                     SearchResultContent(
                         user = user,
                         position = position,
-                        onSearchResultClicked = viewModel::onSearchResultClicked
+                        onSearchResultClicked = viewModel::onSearchResultClicked,
+                        onAddAsContactClicked = viewModel::onAddAsContactClicked,
+                        isContact = isContact
                     )
                 }
             }
@@ -156,7 +159,9 @@ fun SearchBar(
 fun SearchResultContent(
     user: User,
     position: Int,
-    onSearchResultClicked: (Int) -> Unit
+    onSearchResultClicked: (Int) -> Unit,
+    onAddAsContactClicked: (Int, MutableState<Boolean>) -> Unit,
+    isContact: MutableState<Boolean>
 ) {
     Card(
         modifier = Modifier
@@ -164,22 +169,44 @@ fun SearchResultContent(
             .fillMaxWidth()
             .clickable { onSearchResultClicked.invoke(position) },
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            //TODO: when implemented, this can be replaced with profile picture
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = stringResource(id = R.string.search_profile_image_description, formatArgs = arrayOf(user.displayName)),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            Text(
-                text = user.displayName,
-                style = MaterialTheme.typography.subtitle1,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
+                //TODO: when implemented, this can be replaced with profile picture
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = stringResource(id = R.string.search_profile_image_description, formatArgs = arrayOf(user.displayName)),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+                Text(
+                    text = user.displayName,
+                    style = MaterialTheme.typography.subtitle1,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+            if(isContact.value) {
+                Text(
+                    text = stringResource(id = R.string.search_already_contact),
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 8.dp),
+                    style = MaterialTheme.typography.body1
+                )
+            } else {
+                //action icon: add to contacts
+                IconButton(
+                    onClick = { onAddAsContactClicked.invoke(position, isContact) },
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(id = R.string.search_add_contact_description)
+                    )
+                }
+            }
         }
+
     }
 }

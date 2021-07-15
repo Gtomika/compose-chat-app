@@ -19,6 +19,12 @@ object NavDest {
     const val PROFILE = "profile"
 
     const val SEARCH = "search"
+
+    //home screen sub navigation
+
+    const val HOME_CHATS = "home_chats"
+
+    const val HOME_CONTACTS = "home_contacts"
 }
 
 /**
@@ -66,6 +72,8 @@ object FirestoreConstants {
     const val USER_DISPLAY_NAME = "displayName"
 
     const val USER_CHAT_ROOMS = "chatRooms"
+
+    const val USER_CONTACTS = "contacts"
 
     // --------------------- CHAT ROOM collection. -----------------------------------
 

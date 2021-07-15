@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.CountDownTimer
 import android.util.Log
 import androidx.compose.material.SnackbarDuration
+import androidx.compose.runtime.MutableState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
@@ -15,6 +16,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.lang.Exception
 import javax.inject.Inject
 
 @HiltViewModel
@@ -44,6 +46,31 @@ class SearchViewModel @Inject constructor(
      * This timer watches when the user stopped typing.
      */
     var searchStarterTimer: CountDownTimer? = null
+
+    /**
+     * The currently logged in user, or null if for some error the user could not be obtained.
+     */
+    var user: User? = null
+        private set
+
+    //get the current user, to gain access to contacts and other info
+    init {
+        userRepository.getCurrentUser().addOnCompleteListener { userQueryResult ->
+            if(userQueryResult.isSuccessful) {
+                if(userQueryResult.result != null) {
+                    try {
+                        user = userQueryResult.result!!.toObjects(User::class.java)[0]
+                    } catch (e: Exception) {
+                        Log.d(TAG, "Failed to query current user: exception, user possibly not present!")
+                    }
+                } else {
+                    Log.d(TAG, "Failed to query current user: no result included!")
+                }
+            } else {
+                Log.d(TAG, "Failed to query current user!")
+            }
+        }
+    }
 
     /**
      * Goes back to home screen.
@@ -136,6 +163,23 @@ class SearchViewModel @Inject constructor(
      */
     fun onSearchResultClicked(position: Int) {
         Log.d(TAG, "Search result of ${searchResults.value[position].displayName} was clicked!")
+    }
+
+    /**
+     * Called when one of the search results is added as a contact to the current user.
+     */
+    fun onAddAsContactClicked(position: Int, isContactState: MutableState<Boolean>) {
+        Log.d(TAG, "{${user?.displayName}} added ${searchResults.value[position].displayName} as a contact!")
+        userRepository.addUserContact(user!!, searchResults.value[position].uid)
+            ?.addOnCompleteListener { result ->
+               if(result.isSuccessful) {
+                   //update the search result list to show the added user as a contact
+                   isContactState.value = true
+                   //show snackbar
+                   val message = context.getString(R.string.search_added_as_contact, searchResults.value[position].displayName)
+                   showSnackbar(message)
+               }
+            }
     }
 
     /**
