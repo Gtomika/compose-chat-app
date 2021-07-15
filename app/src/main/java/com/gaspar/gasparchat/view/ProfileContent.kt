@@ -1,6 +1,7 @@
 package com.gaspar.gasparchat.view
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -20,7 +21,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.viewmodel.ProfileViewModel
+import com.gaspar.gasparchat.viewmodel.VoidMethod
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -72,7 +73,8 @@ fun ProfileContent() {
 @Composable
 fun ProfileTopBar(viewModel: ProfileViewModel) {
     val showLogoutDialog = viewModel.showLogoutDialog.collectAsState()
-    val showAuthenticateDialog = viewModel.showAuthenticateDialog.collectAsState()
+    val showUpdateAuthenticateDialog = viewModel.showUpdateAuthenticateDialog.collectAsState()
+    val showDeleteAuthenticateDialog = viewModel.showDeleteAuthenticateDialog.collectAsState()
     val displayName = viewModel.displayName.collectAsState()
     val title = stringResource(id = R.string.profile_of, formatArgs = arrayOf(displayName.value))
 
@@ -96,16 +98,25 @@ fun ProfileTopBar(viewModel: ProfileViewModel) {
         }
     )
     //logout dialog
-    if(showLogoutDialog.value) {
-        LogoutDialog(
-            onLogoutDismissed = viewModel::hideLogoutDialog,
-            onLogoutConfirmed = viewModel::onLogoutConfirmed
-        )
-    } else if(showAuthenticateDialog.value) {
-        AuthenticateDialogContent(
-            onDialogDismissed = viewModel::hideAuthenticateDialog,
-            onDialogConfirmed = viewModel::onUpdatePassword
-        )
+    when {
+        showLogoutDialog.value -> {
+            LogoutDialog(
+                onLogoutDismissed = viewModel::hideLogoutDialog,
+                onLogoutConfirmed = viewModel::onLogoutConfirmed
+            )
+        }
+        showUpdateAuthenticateDialog.value -> { //authenticate dialog for password update
+            AuthenticateDialogContent(
+                onDialogDismissed = viewModel::hideUpdateAuthenticateDialog,
+                onDialogConfirmed = viewModel::onUpdatePassword
+            )
+        }
+        showDeleteAuthenticateDialog.value -> { //authenticate dialog for account delete
+            AuthenticateDialogContent(
+                onDialogDismissed = viewModel::hideDeleteAuthenticateDialog,
+                onDialogConfirmed = viewModel::onAccountDeleted
+            )
+        }
     }
 }
 
@@ -158,6 +169,7 @@ fun ProfileBody(
             onShowInfoCheckedChanged = viewModel::onShowDisplayNameInfoCheckedChanged
         )
         UpdatePasswordContent(viewModel = viewModel)
+        DeleteAccountContent(onDeleteButtonClicked = viewModel::displayDeleteAuthenticateDialog)
     }
 }
 
@@ -254,9 +266,10 @@ fun DisplayNameChanger(
 @ExperimentalComposeUiApi
 @Composable
 fun UpdatePasswordContent(viewModel: ProfileViewModel) {
-    Card(modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)) {
         Column(
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Top
@@ -294,6 +307,37 @@ fun UpdatePasswordContent(viewModel: ProfileViewModel) {
                         .align(Alignment.CenterEnd)
                 ) {
                     Text(text = stringResource(id = R.string.profile_save))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DeleteAccountContent(onDeleteButtonClicked: VoidMethod) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.Top,
+        ) {
+            Text(
+                text = stringResource(id = R.string.profile_delete_account),
+                style = MaterialTheme.typography.subtitle1,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = onDeleteButtonClicked,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .align(Alignment.CenterEnd),
+                    colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
+                ) {
+                    Text(text = stringResource(id = R.string.profile_delete))
                 }
             }
         }

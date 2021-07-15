@@ -49,6 +49,9 @@
     <string name="profile_update_password_success">A jelszavad megváltoztott!</string>
     <string name="profile_update_password_fail">Nem sikerült a jelszócsere!</string>
     <string name="profile_update_password_old_incorrect">A megadott jelenlegi jelszavad nem stimmel!</string>
+    <string name="profile_delete_account">A fiókod törlése.</string>
+    <string name="profile_delete">Törlés</string>
+    <string name="profile_delete_account_fail">A törlés sikertelen volt!</string>
 
     <string name="authenticate_dialog_title">Megerősítés</string>
     <string name="authenticate_dialog_cancel">Mégse</string>
@@ -56,5 +59,11 @@
     <string name="authneticate_dialog_current_password">Jelenlegi jelszó</string>
 
     <string name="search_title">Keresés</string>
+    <string name="search_bar_label">Kit keresel?</string>
+    <string name="search_too_short">Legalább %1$d betűt kell beírnod!</string>
+    <string name="search_too_long">Legfeljebb %1$d betűt írhatsz be!</string>
+    <string name="search_results_empty">Nincsenek keresési eredmények.</string>
+    <string name="search_profile_image_description">%1$s profilképe</string>
+    <string name="search_failed">Hiba a keresés közben!</string>
 
 </resources>

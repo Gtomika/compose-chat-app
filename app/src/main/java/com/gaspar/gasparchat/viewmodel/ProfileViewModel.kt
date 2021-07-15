@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.InputField
-import com.google.firebase.auth.EmailAuthCredential
+import com.gaspar.gasparchat.model.UserRepository
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
@@ -29,6 +29,7 @@ class ProfileViewModel @Inject constructor(
     private val navigationDispatcher: NavigationDispatcher,
     val snackbarDispatcher: SnackbarDispatcher,
     val firebaseAuth: FirebaseAuth,
+    private val userRepository: UserRepository,
     @ApplicationContext private val context: Context
 ): ViewModel() {
 
@@ -45,10 +46,16 @@ class ProfileViewModel @Inject constructor(
     val showLogoutDialog: StateFlow<Boolean> = _showLogoutDialog
 
     /**
-     * Stores if the re-authenticate dialog should be displayed.
+     * Stores if the re-authenticate dialog should be displayed (for password update).
      */
-    private val _showAuthenticateDialog = MutableStateFlow(false)
-    val showAuthenticateDialog: StateFlow<Boolean> = _showAuthenticateDialog
+    private val _showUpdateAuthenticateDialog = MutableStateFlow(false)
+    val showUpdateAuthenticateDialog: StateFlow<Boolean> = _showUpdateAuthenticateDialog
+
+    /**
+     * Stores if the re-authenticate dialog should be displayed (for account delete).
+     */
+    private val _showDeleteAuthenticateDialog = MutableStateFlow(false)
+    val showDeleteAuthenticateDialog: StateFlow<Boolean> = _showDeleteAuthenticateDialog
 
     /**
      * Display name of the user.
@@ -136,21 +143,34 @@ class ProfileViewModel @Inject constructor(
         _loading.value = true
         //new name
         val newDisplayName = typedDisplayName.value.input.ifBlank { getEmailFirstPart(user.email!!) }
+        //build request
+        val request =  UserProfileChangeRequest.Builder()
+            .setDisplayName(newDisplayName)
+            .build()
         //call firebase
-        user.updateProfile(
-            UserProfileChangeRequest.Builder()
-                .setDisplayName(newDisplayName)
-                .build()
-        ).addOnCompleteListener { result ->
-            //loading is over
-            _loading.value = false
+        user.updateProfile(request).addOnCompleteListener { result ->
             //check result
             if(result.isSuccessful) {
-                val message = context.getString(R.string.profile_display_name_update_success)
-                showSnackbar(message = message)
-                //update actual string as well, that is watched by other composables
-                _displayName.value = newDisplayName
+                //updated in firebase auth, now update in database as well
+                userRepository.updateUserDisplayName(firebaseUser = firebaseAuth.currentUser!!).addOnCompleteListener { updateResult ->
+                    if(updateResult.isSuccessful) {
+                        //loading is over
+                        _loading.value = false
+                        val message = context.getString(R.string.profile_display_name_update_success)
+                        showSnackbar(message = message)
+                        //update actual string as well, that is watched by other composables
+                        _displayName.value = newDisplayName
+                    } else {
+                        //loading is over
+                        _loading.value = false
+                        val message = context.getString(R.string.profile_display_name_update_fail)
+                        showSnackbar(message = message)
+                    }
+                }
+
             } else {
+                //loading is over
+                _loading.value = false
                 val message = context.getString(R.string.profile_display_name_update_fail)
                 showSnackbar(message = message)
             }
@@ -171,9 +191,9 @@ class ProfileViewModel @Inject constructor(
                 val message = context.getString(R.string.register_whitespace_illegal)
                 _newPassword.value = newPassword.value.copy(input = newPasswordValue, isError = true, errorMessage = message)
             }
-            newPasswordValue.length !in PasswordLimit.MIN..PasswordLimit.MAX -> {
+            newPasswordValue.length !in PasswordLimits.MIN..PasswordLimits.MAX -> {
                 //they are matching here
-                val message = context.getString(R.string.register_password_incorrect_length, PasswordLimit.MIN, PasswordLimit.MAX)
+                val message = context.getString(R.string.register_password_incorrect_length, PasswordLimits.MIN, PasswordLimits.MAX)
                 _newPassword.value = newPassword.value.copy(input = newPasswordValue, isError = true, errorMessage = message)
             }
             else -> {
@@ -192,9 +212,9 @@ class ProfileViewModel @Inject constructor(
                 val message = context.getString(R.string.register_whitespace_illegal)
                 _newPasswordAgain.value = newPasswordAgain.value.copy(input = newPasswordAgainValue, isError = true, errorMessage = message)
             }
-            newPasswordAgainValue.length !in PasswordLimit.MIN..PasswordLimit.MAX -> {
+            newPasswordAgainValue.length !in PasswordLimits.MIN..PasswordLimits.MAX -> {
                 //they are matching here
-                val message = context.getString(R.string.register_password_incorrect_length, PasswordLimit.MIN, PasswordLimit.MAX)
+                val message = context.getString(R.string.register_password_incorrect_length, PasswordLimits.MIN, PasswordLimits.MAX)
                 _newPasswordAgain.value = newPasswordAgain.value.copy(input = newPasswordAgainValue, isError = true, errorMessage = message)
             }
             else -> {
@@ -210,7 +230,7 @@ class ProfileViewModel @Inject constructor(
      */
     fun onUpdatePassword(oldPassword: String) {
         //hide dialog and show loading
-        hideAuthenticateDialog()
+        hideUpdateAuthenticateDialog()
         _loading.value = true
         //update
         val user = firebaseAuth.currentUser!!
@@ -248,19 +268,64 @@ class ProfileViewModel @Inject constructor(
     fun checkNewPasswords() {
         if(newPassword.value.input == newPasswordAgain.value.input) {
             //they match
-           displayAuthenticateDialog() //start re authentication
+           displayUpdateAuthenticateDialog() //start re authentication
         } else {
             val message = context.getString(R.string.register_password_not_matching)
             showSnackbar(message = message)
         }
     }
 
-    private fun displayAuthenticateDialog() {
-        _showAuthenticateDialog.value = true
+    /**
+     * Called when the user types in their password to confirm they want to delete account. Makes a call
+     * to firebase and deletes the account
+     * @param password The password the user typed in.
+     */
+    fun onAccountDeleted(password: String) {
+        //hide dialog and show loading
+        hideDeleteAuthenticateDialog()
+        _loading.value = true
+        //update
+        val firebaseUser = firebaseAuth.currentUser!!
+        val user = userRepository.firebaseUserToUser(firebaseUser) //will be needed later
+        val credit = EmailAuthProvider.getCredential(firebaseUser.email!!, password)
+        firebaseUser.reauthenticate(credit).addOnCompleteListener { result ->
+            if(result.isSuccessful) {
+                //the user entered correct password, ready to delete
+                firebaseUser.delete().addOnCompleteListener { deleteResult ->
+                    if(deleteResult.isSuccessful) {
+                        //the user is deleted from firebase auth, also remove all data from firestore
+                        userRepository.deleteUser(user) {}
+                        //redirect to login
+                        redirectToLogin()
+                    } else {
+                        //failed to delete
+                        val message = context.getString(R.string.profile_delete_account_fail)
+                        showSnackbar(message)
+                    }
+                }
+            } else {
+                _loading.value = false
+                //something went wrong: probably incorrect password
+                val message = context.getString(R.string.profile_update_password_old_incorrect)
+                showSnackbar(message)
+            }
+        }
     }
 
-    fun hideAuthenticateDialog() {
-        _showAuthenticateDialog.value = false
+    private fun displayUpdateAuthenticateDialog() {
+        _showUpdateAuthenticateDialog.value = true
+    }
+
+    fun hideUpdateAuthenticateDialog() {
+        _showUpdateAuthenticateDialog.value = false
+    }
+
+    fun displayDeleteAuthenticateDialog() {
+        _showDeleteAuthenticateDialog.value = true
+    }
+
+    fun hideDeleteAuthenticateDialog() {
+        _showDeleteAuthenticateDialog.value = false
     }
 
     /**

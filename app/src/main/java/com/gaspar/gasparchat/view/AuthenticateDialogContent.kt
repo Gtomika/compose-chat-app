@@ -39,7 +39,8 @@ fun AuthenticateDialogContent(
        title = {
           Text(
              text = stringResource(id = R.string.authenticate_dialog_title),
-             style = MaterialTheme.typography.h6
+             style = MaterialTheme.typography.h6,
+             modifier = Modifier.padding(bottom = 16.dp)
           )
        },
        text = {

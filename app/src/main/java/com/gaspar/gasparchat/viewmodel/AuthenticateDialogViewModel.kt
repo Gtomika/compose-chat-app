@@ -2,7 +2,7 @@ package com.gaspar.gasparchat.viewmodel
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
-import com.gaspar.gasparchat.PasswordLimit
+import com.gaspar.gasparchat.PasswordLimits
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.model.InputField
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -59,9 +59,9 @@ class AuthenticateDialogViewModel @Inject constructor(
                 _password.value = password.value.copy(input = newPasswordValue, isError = true, errorMessage = message)
                 _passwordValid.value = false
             }
-            newPasswordValue.length !in PasswordLimit.MIN..PasswordLimit.MAX -> {
+            newPasswordValue.length !in PasswordLimits.MIN..PasswordLimits.MAX -> {
                 //they are matching here
-                val message = context.getString(R.string.register_password_incorrect_length, PasswordLimit.MIN, PasswordLimit.MAX)
+                val message = context.getString(R.string.register_password_incorrect_length, PasswordLimits.MIN, PasswordLimits.MAX)
                 _password.value = password.value.copy(input = newPasswordValue, isError = true, errorMessage = message)
                 _passwordValid.value = false
             }

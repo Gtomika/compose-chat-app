@@ -17,7 +17,7 @@ class HomeViewModel @Inject constructor(
     val firebaseAuth: FirebaseAuth
 ): ViewModel() {
 
-    private val _loading = MutableStateFlow(true)
+    private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
 
     fun redirectToLogin() {

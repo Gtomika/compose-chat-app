@@ -24,7 +24,7 @@ object NavDest {
 /**
  * Limits of password length.
  */
-object PasswordLimit {
+object PasswordLimits {
 
     const val MIN = 6 //at least 6 is required by FIREBASE AUTH
 
@@ -38,4 +38,56 @@ object NameLimits {
 
     const val MAX = 30
 
+}
+
+/**
+ * Limits of the length of text in the search bar.
+ */
+object SearchValues {
+
+    const val MIN_LENGTH = 3
+
+    const val MAX_LENGTH = 30
+
+    /**
+     * The number of milliseconds that passes after the user stopped typing, and the search begins.
+     */
+    const val SEARCH_DELAY: Long = 1000
+}
+
+object FirestoreConstants {
+
+    // --------------------- USER collection. -----------------------------------
+
+    const val USER_COLLECTION = "users"
+
+    const val USER_UID = "uid"
+
+    const val USER_DISPLAY_NAME = "displayName"
+
+    const val USER_CHAT_ROOMS = "chatRooms"
+
+    // --------------------- CHAT ROOM collection. -----------------------------------
+
+    const val CHAT_ROOM_COLLECTION = "chatRooms"
+
+    const val CHAT_ROOM_UID = "chatUid"
+
+    const val CHAT_ROOM_NAME = "chatRoomName"
+
+    const val CHAT_ROOM_USERS = "chatRoomUsers"
+
+    const val CHAT_ROOM_MESSAGES = "chatRoomMessages"
+
+    // --------------------- MESSAGE SUB-COLLECTION collection. -----------------------------------
+
+    const val MESSAGE_COLLECTION = "messages"
+
+    const val MESSAGE_UID = "messageUid"
+
+    const val MESSAGE_TEXT = "text"
+
+    const val MESSAGE_TIME = "sendTime"
+
+    const val MESSAGE_SENDER_UID = "senderUid"
 }

@@ -14,12 +14,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.gaspar.gasparchat.ui.theme.GasparChatTheme
-import com.gaspar.gasparchat.view.HomeContent
-import com.gaspar.gasparchat.view.LoginContent
-import com.gaspar.gasparchat.view.ProfileContent
-import com.gaspar.gasparchat.view.RegisterContent
+import com.gaspar.gasparchat.view.*
 import com.gaspar.gasparchat.viewmodel.LoginViewModel
 import com.gaspar.gasparchat.viewmodel.RegisterViewModel
+import com.gaspar.gasparchat.viewmodel.SearchViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -66,12 +64,12 @@ fun MainActivityContent(
             NavHost(navController = navController, startDestination = NavDest.HOME) {
                 //redirect to login screen
                 composable(route = NavDest.LOGIN) {
-                    val viewModel = hiltViewModel<LoginViewModel>()
+                    val viewModel = hiltViewModel<LoginViewModel>() //this view model will always reset when showing this screen
                     LoginContent(viewModel)
                 }
                 //redirect to register screen
                 composable(route = NavDest.REGISTER) {
-                    val viewModel = hiltViewModel<RegisterViewModel>()
+                    val viewModel = hiltViewModel<RegisterViewModel>() //this view model will always reset when showing this screen
                     RegisterContent(viewModel)
                 }
                 //redirect to home
@@ -81,6 +79,11 @@ fun MainActivityContent(
                 //redirect to profile
                 composable(route = NavDest.PROFILE) {
                     ProfileContent()
+                }
+                //redirect to search
+                composable(route = NavDest.SEARCH) {
+                    val viewModel = hiltViewModel<SearchViewModel>() //this view model will always reset when showing this screen
+                    SearchContent(viewModel = viewModel)
                 }
             }
             //observe incoming navigation commands
