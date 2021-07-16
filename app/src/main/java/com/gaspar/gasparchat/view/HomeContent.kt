@@ -33,11 +33,7 @@ import kotlinx.coroutines.launch
  */
 @ExperimentalAnimationApi
 @Composable
-fun HomeContent(
-    blockListUpdateState: MutableState<Boolean>,
-    contactListUpdateState: MutableState<Boolean>,
-    viewModel: HomeViewModel = hiltViewModel()
-) {
+fun HomeContent(viewModel: HomeViewModel = hiltViewModel()) {
     val firebaseUser = viewModel.firebaseAuth.currentUser
     if(firebaseUser == null) {
         //there is nobody logged in, redirect to home
@@ -72,17 +68,11 @@ fun HomeContent(
                     }
                     composable(route = NavDest.HOME_CONTACTS) {
                         val contactViewModel = hiltViewModel<ContactsViewModel>()
-                        ContactsContent(
-                            viewModel = contactViewModel,
-                            contactListUpdateState = contactListUpdateState
-                        )
+                        ContactsContent(viewModel = contactViewModel)
                     }
                     composable(route = NavDest.HOME_BLOCKED) {
                         val blockedViewModel = hiltViewModel<BlockedViewModel>()
-                        BlockedContent(
-                            viewModel = blockedViewModel,
-                            blockListUpdateState = blockListUpdateState
-                        )
+                        BlockedContent(viewModel = blockedViewModel)
                     }
                 }
             }

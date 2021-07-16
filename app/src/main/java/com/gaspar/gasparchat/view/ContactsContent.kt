@@ -26,18 +26,8 @@ import com.gaspar.gasparchat.viewmodel.ContactsViewModel
 
 @ExperimentalAnimationApi
 @Composable
-fun ContactsContent(
-    viewModel: ContactsViewModel,
-    contactListUpdateState: MutableState<Boolean>
-) {
+fun ContactsContent(viewModel: ContactsViewModel, ) {
     val loading = viewModel.loading.collectAsState()
-
-    //check the value of the contact list update state, and update if needed
-    if(contactListUpdateState.value) {
-        viewModel.getCurrentUserAndContacts()
-        contactListUpdateState.value = false //consume the update state
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
         LoadingIndicator(loadingFlow = viewModel.loading)
         AnimatedVisibility(visible = !loading.value) {

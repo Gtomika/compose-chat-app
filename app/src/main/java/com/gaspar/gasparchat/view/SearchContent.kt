@@ -39,11 +39,7 @@ import kotlinx.coroutines.launch
 @ExperimentalComposeUiApi
 @ExperimentalAnimationApi
 @Composable
-fun SearchContent(
-    viewModel: SearchViewModel,
-    blockListUpdateState: MutableState<Boolean>,
-    contactListUpdateState: MutableState<Boolean>
-) {
+fun SearchContent(viewModel: SearchViewModel) {
     val scaffoldState = rememberScaffoldState()
     Scaffold(
         scaffoldState = scaffoldState,
@@ -51,11 +47,7 @@ fun SearchContent(
         content = {
             Box(modifier = Modifier.fillMaxSize()) {
                 LoadingIndicator(viewModel.loading)
-                SearchBody(
-                    viewModel = viewModel,
-                    blockListUpdateState = blockListUpdateState,
-                    contactListUpdateState = contactListUpdateState
-                )
+                SearchBody(viewModel = viewModel)
             }
         }
     )
@@ -86,11 +78,7 @@ fun SearchTopBar(onBackClicked: VoidMethod) {
 
 @ExperimentalComposeUiApi
 @Composable
-fun SearchBody(
-    viewModel: SearchViewModel,
-    blockListUpdateState: MutableState<Boolean>,
-    contactListUpdateState: MutableState<Boolean>
-) {
+fun SearchBody(viewModel: SearchViewModel) {
     Column( //this is NOT the scrollable column
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Top,
@@ -115,9 +103,7 @@ fun SearchBody(
                         onAddAsContactClicked = viewModel::onAddAsContactClicked,
                         onBlockClicked = viewModel::onBlockUserClicked,
                         isContact = isContact,
-                        isBlocked = isBlocked,
-                        blockListUpdateState = blockListUpdateState,
-                        contactListUpdateState = contactListUpdateState
+                        isBlocked = isBlocked
                     )
                 }
             }
@@ -182,9 +168,7 @@ fun SearchResultContent(
     onAddAsContactClicked: (Int, MutableState<Boolean>) -> Unit,
     onBlockClicked: (Int, MutableState<Boolean>) -> Unit,
     isContact: MutableState<Boolean>,
-    isBlocked: MutableState<Boolean>,
-    blockListUpdateState: MutableState<Boolean>,
-    contactListUpdateState: MutableState<Boolean>
+    isBlocked: MutableState<Boolean>
 ) {
     Card(
         modifier = Modifier
@@ -234,20 +218,14 @@ fun SearchResultContent(
                 else -> { //no contact with this user so far
                     Row(modifier = Modifier.align(Alignment.CenterEnd)) {
                         //action icon: add to contacts
-                        IconButton(onClick = {
-                            onAddAsContactClicked.invoke(position, isContact)
-                            contactListUpdateState.value = true //signal other composables that care about contact list
-                        }) {
+                        IconButton(onClick = { onAddAsContactClicked.invoke(position, isContact) }) {
                             Icon(
                                 imageVector = Icons.Default.Add,
                                 contentDescription = stringResource(id = R.string.search_add_contact_description)
                             )
                         }
                         //action icon: block
-                        IconButton(onClick = {
-                            onBlockClicked.invoke(position, isBlocked)
-                            blockListUpdateState.value = true //signal other composables that care about blocked users
-                        }) {
+                        IconButton(onClick = { onBlockClicked.invoke(position, isBlocked) }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.icon_block),
                                 contentDescription = stringResource(id = R.string.search_blocked)

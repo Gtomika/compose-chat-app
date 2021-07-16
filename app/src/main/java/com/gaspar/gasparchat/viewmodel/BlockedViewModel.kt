@@ -5,6 +5,7 @@ import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarResult
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gaspar.gasparchat.BlocklistChangedEvent
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.SnackbarDispatcher
 import com.gaspar.gasparchat.model.User
@@ -14,6 +15,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import javax.inject.Inject
 
 @HiltViewModel
@@ -33,6 +37,21 @@ class BlockedViewModel @Inject constructor(
     val blockedUsers: StateFlow<List<User>> = _blockedUsers
 
     init {
+        EventBus.getDefault().register(this)
+        getCurrentUserAndBlocks()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        EventBus.getDefault().unregister(this)
+    }
+
+    /**
+     * Called when another component signaled that the user's block list changed.
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onBlockListChangedEvent(event: BlocklistChangedEvent) {
+        //update state
         getCurrentUserAndBlocks()
     }
 

@@ -17,6 +17,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.greenrobot.eventbus.EventBus
 import java.lang.Exception
 import javax.inject.Inject
 
@@ -46,7 +47,7 @@ class SearchViewModel @Inject constructor(
     /**
      * This timer watches when the user stopped typing.
      */
-    var searchStarterTimer: CountDownTimer? = null
+    private var searchStarterTimer: CountDownTimer? = null
 
     /**
      * The currently logged in user, or null if for some error the user could not be obtained.
@@ -170,6 +171,8 @@ class SearchViewModel @Inject constructor(
      * Called when one of the search results is added as a contact to the current user.
      */
     fun onAddAsContactClicked(position: Int, isContactState: MutableState<Boolean>) {
+        //signal a contact list update
+        EventBus.getDefault().post(ContactsChangedEvent)
         Log.d(TAG, "{${user?.displayName}} added ${searchResults.value[position].displayName} as a contact!")
         userRepository.addUserContact(user!!, searchResults.value[position].uid)
             ?.addOnCompleteListener { result ->
@@ -187,6 +190,8 @@ class SearchViewModel @Inject constructor(
      * Called when a search result is selected as blocked user.
      */
     fun onBlockUserClicked(position: Int, isBlockedState: MutableState<Boolean>) {
+        //signal a block list update
+        EventBus.getDefault().post(BlocklistChangedEvent)
         Log.d(TAG, "{${user?.displayName}} blocked ${searchResults.value[position].displayName}!")
         userRepository.addUserBlock(user!!, searchResults.value[position].uid)
             ?.addOnSuccessListener {

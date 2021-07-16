@@ -1,5 +1,7 @@
 package com.gaspar.gasparchat
 
+import androidx.annotation.Keep
+
 /**
  * Tag for logging.
  */
@@ -103,3 +105,15 @@ object FirestoreConstants {
 
     const val MESSAGE_SENDER_UID = "senderUid"
 }
+
+/**
+ * Message type that is fired when a component signals that the block list has updated.
+ */
+@Keep
+object BlocklistChangedEvent
+
+/**
+ * Message type that is fired when a component signals that the contacts list has updated.
+ */
+@Keep
+object ContactsChangedEvent

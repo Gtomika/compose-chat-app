@@ -7,8 +7,6 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.LifecycleOwner
@@ -60,10 +58,6 @@ fun MainActivityContent(
 ) {
     GasparChatTheme {
         Surface(color = MaterialTheme.colors.background) {
-            //create states user over the entire app
-            val blocklistUpdateState = remember { mutableStateOf(false) }
-            val contactListUpdateState = remember { mutableStateOf(false) }
-
             //create nav controller
             val navController = rememberNavController()
             //build nav host, start is HOME, but it redirects to LOGIN if needed
@@ -80,10 +74,7 @@ fun MainActivityContent(
                 }
                 //redirect to home
                 composable(route = NavDest.HOME) {
-                    HomeContent(
-                        blockListUpdateState = blocklistUpdateState,
-                        contactListUpdateState = contactListUpdateState
-                    )
+                    HomeContent()
                 }
                 //redirect to profile
                 composable(route = NavDest.PROFILE) {
@@ -92,11 +83,7 @@ fun MainActivityContent(
                 //redirect to search
                 composable(route = NavDest.SEARCH) {
                     val viewModel = hiltViewModel<SearchViewModel>() //this view model will always reset when showing this screen
-                    SearchContent(
-                        viewModel = viewModel,
-                        blockListUpdateState = blocklistUpdateState,
-                        contactListUpdateState = contactListUpdateState
-                    )
+                    SearchContent(viewModel = viewModel)
                 }
             }
             //observe incoming navigation commands

@@ -5,6 +5,7 @@ import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarResult
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gaspar.gasparchat.ContactsChangedEvent
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.SnackbarDispatcher
 import com.gaspar.gasparchat.model.User
@@ -14,6 +15,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import javax.inject.Inject
 
 @HiltViewModel
@@ -36,6 +40,18 @@ class ContactsViewModel @Inject constructor(
     val currentUser: StateFlow<User> = _currentUser
 
     init {
+        EventBus.getDefault().register(this)
+        getCurrentUserAndContacts()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        EventBus.getDefault().unregister(this)
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onContactListUpdatedEvent(event: ContactsChangedEvent) {
+        //refresh contents
         getCurrentUserAndContacts()
     }
 
