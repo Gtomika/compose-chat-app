@@ -1,24 +1,22 @@
 package com.gaspar.gasparchat.viewmodel
 
-import android.content.Context
+import android.app.Application
 import android.os.CountDownTimer
 import android.util.Log
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarResult
 import androidx.compose.runtime.MutableState
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.model.User
 import com.gaspar.gasparchat.model.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.greenrobot.eventbus.EventBus
-import java.lang.Exception
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,8 +24,8 @@ class SearchViewModel @Inject constructor(
     private val navigationDispatcher: NavigationDispatcher,
     val snackbarDispatcher: SnackbarDispatcher,
     private val userRepository: UserRepository,
-    @ApplicationContext private val context: Context
-): ViewModel() {
+    application: GasparChatApplication
+): AndroidViewModel(application) {
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
@@ -48,6 +46,8 @@ class SearchViewModel @Inject constructor(
      * This timer watches when the user stopped typing.
      */
     private var searchStarterTimer: CountDownTimer? = null
+
+    private val context: Application = getApplication()
 
     /**
      * The currently logged in user, or null if for some error the user could not be obtained.

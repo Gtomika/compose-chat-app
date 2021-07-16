@@ -1,17 +1,13 @@
 package com.gaspar.gasparchat.viewmodel
 
-import android.content.Context
+import android.app.Application
 import androidx.compose.material.SnackbarDuration
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.gaspar.gasparchat.NavDest
-import com.gaspar.gasparchat.NavigationDispatcher
-import com.gaspar.gasparchat.R
-import com.gaspar.gasparchat.SnackbarDispatcher
+import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.InputField
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -22,15 +18,14 @@ import javax.inject.Inject
  * @param navigationDispatcher Object used to send navigation commands.
  * @param snackbarDispatcher Object used to send snackbar show commands.
  * @param firebaseAuth Firebase authentication.
- * @param context The application context.
  */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val navigationDispatcher: NavigationDispatcher,
     val snackbarDispatcher: SnackbarDispatcher,
     private val firebaseAuth: FirebaseAuth,
-    @ApplicationContext private val context: Context //this is not a leak, application context
-): ViewModel() {
+    application: GasparChatApplication
+): AndroidViewModel(application) {
 
     /**
      * State of the email.
@@ -57,6 +52,8 @@ class LoginViewModel @Inject constructor(
      */
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
+
+    private val context: Application = getApplication()
 
     fun onEmailChanged(newEmailValue: String) {
         if(newEmailValue.isBlank()) {

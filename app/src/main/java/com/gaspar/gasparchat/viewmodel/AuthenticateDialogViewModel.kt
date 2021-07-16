@@ -1,7 +1,10 @@
 package com.gaspar.gasparchat.viewmodel
 
+import android.app.Application
 import android.content.Context
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
+import com.gaspar.gasparchat.GasparChatApplication
 import com.gaspar.gasparchat.PasswordLimits
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.model.InputField
@@ -16,8 +19,8 @@ typealias StringMethod = (String) -> Unit
 
 @HiltViewModel
 class AuthenticateDialogViewModel @Inject constructor(
-    @ApplicationContext private val context: Context
-): ViewModel() {
+    application: GasparChatApplication
+): AndroidViewModel(application) {
 
     /**
      * Displayed password inside the authenticate dialog
@@ -43,6 +46,8 @@ class AuthenticateDialogViewModel @Inject constructor(
      */
     var onDialogConfirmed: StringMethod = {}
         private set
+
+    private val context: Application = getApplication()
 
     /**
      * Called when typed password value changes.
