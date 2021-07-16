@@ -33,7 +33,13 @@ data class User(
      * Moreover, the user can manually add contacts from the search screen.
      */
     @PropertyName(FirestoreConstants.USER_CONTACTS)
-    val contacts: List<String> = listOf()
+    var contacts: List<String> = listOf(),
+
+    /**
+     * [User] uid-s of those users who have been blocked by this user.
+     */
+    @PropertyName(FirestoreConstants.USER_BLOCKS)
+    var blockedUsers: List<String> = listOf()
 
     //TODO: maybe image URL, other stuff
 )

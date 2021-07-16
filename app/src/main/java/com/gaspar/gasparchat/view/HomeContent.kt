@@ -7,11 +7,9 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -23,6 +21,9 @@ import androidx.navigation.compose.rememberNavController
 import com.gaspar.gasparchat.NavDest
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.model.HomeNavigationItem
+import com.gaspar.gasparchat.viewmodel.BlockedViewModel
+import com.gaspar.gasparchat.viewmodel.ChatsViewModel
+import com.gaspar.gasparchat.viewmodel.ContactsViewModel
 import com.gaspar.gasparchat.viewmodel.HomeViewModel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -32,8 +33,11 @@ import kotlinx.coroutines.launch
  */
 @ExperimentalAnimationApi
 @Composable
-fun HomeContent() {
-    val viewModel = hiltViewModel<HomeViewModel>()
+fun HomeContent(
+    blockListUpdateState: MutableState<Boolean>,
+    contactListUpdateState: MutableState<Boolean>,
+    viewModel: HomeViewModel = hiltViewModel()
+) {
     val firebaseUser = viewModel.firebaseAuth.currentUser
     if(firebaseUser == null) {
         //there is nobody logged in, redirect to home
@@ -42,14 +46,14 @@ fun HomeContent() {
     }
     val scaffoldState = rememberScaffoldState()
     val navController = rememberNavController()
-    val displayName = viewModel.displayName.collectAsState()
+    val loading = viewModel.loading.collectAsState()
     Scaffold(
         scaffoldState = scaffoldState,
         topBar = {
             HomeTopBar(
                 onProfileClicked = viewModel::redirectToProfile,
                 onSearchClicked = viewModel::redirectToSearch,
-                displayName = displayName.value
+                displayName = firebaseUser.displayName!!
             )
         },
         content = {
@@ -57,12 +61,28 @@ fun HomeContent() {
                 //loading indicator is always on top
                 LoadingIndicator(loadingFlow = viewModel.loading)
                 //actual content is a navigation host
-                NavHost(navController = navController, startDestination = NavDest.HOME_CHATS) {
+                NavHost(
+                    navController = navController,
+                    startDestination = NavDest.HOME_CHATS,
+                    modifier = Modifier.alpha(if(loading.value) 0.5f else 1f)
+                ) {
                     composable(route = NavDest.HOME_CHATS) {
-                        ChatsContent()
+                        val chatsViewModel = hiltViewModel<ChatsViewModel>()
+                        ChatsContent(viewModel = chatsViewModel)
                     }
                     composable(route = NavDest.HOME_CONTACTS) {
-                        ContactsContent()
+                        val contactViewModel = hiltViewModel<ContactsViewModel>()
+                        ContactsContent(
+                            viewModel = contactViewModel,
+                            contactListUpdateState = contactListUpdateState
+                        )
+                    }
+                    composable(route = NavDest.HOME_BLOCKED) {
+                        val blockedViewModel = hiltViewModel<BlockedViewModel>()
+                        BlockedContent(
+                            viewModel = blockedViewModel,
+                            blockListUpdateState = blockListUpdateState
+                        )
                     }
                 }
             }
@@ -119,7 +139,8 @@ fun HomeBottomNavigationBar(
 ) {
     val navItems = listOf(
         HomeNavigationItem.Chats,
-        HomeNavigationItem.Contacts
+        HomeNavigationItem.Contacts,
+        HomeNavigationItem.Blocked
     )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -160,16 +181,4 @@ fun HomeBottomNavigationBar(
             )
         }
     }
-}
-
-@Composable
-fun ChatsContent() {
-    Text(text = "Chats")
-    //TODO
-}
-
-@Composable
-fun ContactsContent() {
-    Text(text = "Contacts")
-    //TODO
 }

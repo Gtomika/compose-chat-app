@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.model.User
+import com.gaspar.gasparchat.model.isBlockedBy
 import com.gaspar.gasparchat.model.isContactOf
 import com.gaspar.gasparchat.viewmodel.SearchViewModel
 import com.gaspar.gasparchat.viewmodel.StringMethod
@@ -37,7 +39,11 @@ import kotlinx.coroutines.launch
 @ExperimentalComposeUiApi
 @ExperimentalAnimationApi
 @Composable
-fun SearchContent(viewModel: SearchViewModel) {
+fun SearchContent(
+    viewModel: SearchViewModel,
+    blockListUpdateState: MutableState<Boolean>,
+    contactListUpdateState: MutableState<Boolean>
+) {
     val scaffoldState = rememberScaffoldState()
     Scaffold(
         scaffoldState = scaffoldState,
@@ -45,7 +51,11 @@ fun SearchContent(viewModel: SearchViewModel) {
         content = {
             Box(modifier = Modifier.fillMaxSize()) {
                 LoadingIndicator(viewModel.loading)
-                SearchBody(viewModel = viewModel)
+                SearchBody(
+                    viewModel = viewModel,
+                    blockListUpdateState = blockListUpdateState,
+                    contactListUpdateState = contactListUpdateState
+                )
             }
         }
     )
@@ -76,7 +86,11 @@ fun SearchTopBar(onBackClicked: VoidMethod) {
 
 @ExperimentalComposeUiApi
 @Composable
-fun SearchBody(viewModel: SearchViewModel) {
+fun SearchBody(
+    viewModel: SearchViewModel,
+    blockListUpdateState: MutableState<Boolean>,
+    contactListUpdateState: MutableState<Boolean>
+) {
     Column( //this is NOT the scrollable column
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Top,
@@ -93,12 +107,17 @@ fun SearchBody(viewModel: SearchViewModel) {
             LazyColumn {
                 itemsIndexed(searchResult.value) { position: Int, user: User ->
                     val isContact = remember(user) { mutableStateOf(isContactOf(viewModel.user!!, user)) }
+                    val isBlocked = remember(user) { mutableStateOf(isBlockedBy(viewModel.user!!, user)) }
                     SearchResultContent(
                         user = user,
                         position = position,
                         onSearchResultClicked = viewModel::onSearchResultClicked,
                         onAddAsContactClicked = viewModel::onAddAsContactClicked,
-                        isContact = isContact
+                        onBlockClicked = viewModel::onBlockUserClicked,
+                        isContact = isContact,
+                        isBlocked = isBlocked,
+                        blockListUpdateState = blockListUpdateState,
+                        contactListUpdateState = contactListUpdateState
                     )
                 }
             }
@@ -161,7 +180,11 @@ fun SearchResultContent(
     position: Int,
     onSearchResultClicked: (Int) -> Unit,
     onAddAsContactClicked: (Int, MutableState<Boolean>) -> Unit,
-    isContact: MutableState<Boolean>
+    onBlockClicked: (Int, MutableState<Boolean>) -> Unit,
+    isContact: MutableState<Boolean>,
+    isBlocked: MutableState<Boolean>,
+    blockListUpdateState: MutableState<Boolean>,
+    contactListUpdateState: MutableState<Boolean>
 ) {
     Card(
         modifier = Modifier
@@ -187,23 +210,50 @@ fun SearchResultContent(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
-            if(isContact.value) {
-                Text(
-                    text = stringResource(id = R.string.search_already_contact),
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 8.dp),
-                    style = MaterialTheme.typography.body1
-                )
-            } else {
-                //action icon: add to contacts
-                IconButton(
-                    onClick = { onAddAsContactClicked.invoke(position, isContact) },
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(id = R.string.search_add_contact_description)
+            when {
+                isContact.value -> { //ALREADY know this user: show that instead of buttons
+                    Text(
+                        text = stringResource(id = R.string.search_already_contact),
+                        textAlign = TextAlign.End,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 8.dp),
+                        style = MaterialTheme.typography.body1
                     )
+                }
+                isBlocked.value -> { //ALREADY blocked this user: show that instead of buttons
+                    Text(
+                        text = stringResource(id = R.string.search_blocked),
+                        textAlign = TextAlign.End,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 8.dp),
+                        style = MaterialTheme.typography.body1
+                    )
+                }
+                else -> { //no contact with this user so far
+                    Row(modifier = Modifier.align(Alignment.CenterEnd)) {
+                        //action icon: add to contacts
+                        IconButton(onClick = {
+                            onAddAsContactClicked.invoke(position, isContact)
+                            contactListUpdateState.value = true //signal other composables that care about contact list
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = stringResource(id = R.string.search_add_contact_description)
+                            )
+                        }
+                        //action icon: block
+                        IconButton(onClick = {
+                            onBlockClicked.invoke(position, isBlocked)
+                            blockListUpdateState.value = true //signal other composables that care about blocked users
+                        }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.icon_block),
+                                contentDescription = stringResource(id = R.string.search_blocked)
+                            )
+                        }
+                    }
                 }
             }
         }

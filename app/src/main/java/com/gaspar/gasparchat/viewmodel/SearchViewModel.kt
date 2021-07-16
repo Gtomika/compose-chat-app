@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.CountDownTimer
 import android.util.Log
 import androidx.compose.material.SnackbarDuration
+import androidx.compose.material.SnackbarResult
 import androidx.compose.runtime.MutableState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -183,17 +184,53 @@ class SearchViewModel @Inject constructor(
     }
 
     /**
+     * Called when a search result is selected as blocked user.
+     */
+    fun onBlockUserClicked(position: Int, isBlockedState: MutableState<Boolean>) {
+        Log.d(TAG, "{${user?.displayName}} blocked ${searchResults.value[position].displayName}!")
+        userRepository.addUserBlock(user!!, searchResults.value[position].uid)
+            ?.addOnSuccessListener {
+                //update state so screen recomposes
+                isBlockedState.value = true
+                //show snackbar
+                val message = context.getString(R.string.search_block_successful, searchResults.value[position].displayName)
+                val actionLabel = context.getString(R.string.undo)
+                val onActionClicked = {
+                    userRepository.removeUserBlock(user!!, searchResults.value[position].uid)
+                        ?.addOnSuccessListener {
+                            isBlockedState.value = false
+                        }
+                }
+                showSnackbar(
+                    message = message,
+                    actionLabel = actionLabel,
+                    duration = SnackbarDuration.Long,
+                    onActionClicked =  { onActionClicked.invoke() }
+                )
+            }
+    }
+
+    /**
      * Quick way to show a snackbar.
      * @param message Message to show.
      */
-    private fun showSnackbar(message: String) {
+    private fun showSnackbar(
+        message: String,
+        duration: SnackbarDuration = SnackbarDuration.Short,
+        actionLabel: String? = null,
+        onActionClicked: VoidMethod = {}
+    ) {
         snackbarDispatcher.dispatchSnackbarCommand { snackbarHostState ->
             viewModelScope.launch {
-                snackbarHostState.showSnackbar(
+                val result = snackbarHostState.showSnackbar(
                     message = message,
-                    actionLabel = null,
-                    duration = SnackbarDuration.Short
+                    actionLabel = actionLabel,
+                    duration = duration
                 )
+                when(result) {
+                    SnackbarResult.ActionPerformed -> onActionClicked.invoke()
+                    SnackbarResult.Dismissed -> { }
+                }
             }
         }
     }

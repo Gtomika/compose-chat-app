@@ -3,6 +3,8 @@
     <string name="yes">Igen</string>
     <string name="no">Nem</string>
     <string name="info">Infó</string>
+    <string name="undo">Visszavonás</string>
+    <string name="retry">Újra</string>
 
     <string name="login_prompt">Kérlek jelentkezz be!</string>
     <string name="login_email">Email cím</string>
@@ -31,6 +33,14 @@
     <string name="home_title">Üdv, %1$s!</string>
     <string name="home_chats">Csevegések</string>
     <string name="home_contacts">Kapcsolatok</string>
+    <string name="home_blocked">Tiltások</string>
+    <string name="home_no_contacts">Nincsenek kapcsolataid.</string>
+    <string name="home_contacts_error">Hiba a kapcsolatok betöltésekor!</string>
+    <string name="home_chats_error">Hiba a csevegések betöltése közben!</string>
+    <string name="home_block_error">Hiba a tiltólista betöltésekor!</string>
+    <string name="home_no_blocked">Nem tiltottál le senkit.</string>
+    <string name="home_unblock_failed">Hiba a tiltás visszavonása közben.</string>
+    <string name="home_unblock_success">Megszüntetted %1$s letiltását.</string>
 
     <string name="profile_title">Profil</string>
     <string name="profile_of">%1$s profilja</string>
@@ -70,5 +80,7 @@
     <string name="search_add_contact_description">Felvétel kapcsolatként</string>
     <string name="search_added_as_contact">%1$s-t felvetted kapcsolatként!</string>
     <string name="search_already_contact">Ismered őt!</string>
+    <string name="search_blocked">Letiltottad!</string>
+    <string name="search_block_successful">Letiltottad %1$s-t!</string>
 
 </resources>

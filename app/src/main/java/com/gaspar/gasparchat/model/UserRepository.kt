@@ -8,6 +8,7 @@ import com.gaspar.gasparchat.viewmodel.VoidMethod
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
@@ -94,11 +95,47 @@ class UserRepository @Inject constructor(
             Log.d(TAG, "User already had this contact, doing nothing and returning null...")
             return null
         }
-        val updatedUser = user.copy(contacts = user.contacts + contactUserUid)
+        user.contacts = user.contacts + contactUserUid
         return firestore
             .collection(FirestoreConstants.USER_COLLECTION)
             .document(user.uid)
-            .set(updatedUser, SetOptions.merge())
+            .set(user)
+    }
+
+    /**
+     * Adds a user as blocked to another users blocklist. Does nothing if [blockUserId] is already blocked.
+     * @param user The user whose block list will be expanded.
+     * @param blockUserId The uid of the user who will be blocked by [user].
+     * @return Async [Task] or null if [blockUserId] was already blocked by [user].
+     */
+    fun addUserBlock(user: User, blockUserId: String): Task<Void>? {
+        if(user.blockedUsers.contains(blockUserId)) {
+            Log.d(TAG, "User already had the selected user blocked, doing nothing and returning null...")
+            return null
+        }
+        user.blockedUsers = user.blockedUsers + blockUserId
+        return firestore
+            .collection(FirestoreConstants.USER_COLLECTION)
+            .document(user.uid)
+            .set(user)
+    }
+
+    /**
+     * Removes a [User] from another users block list.
+     * @param user Whose block list will be shortened.
+     * @param blockUserId Who will be removed from the block list.
+     * @return Async [Task] or null if the user was not even on the blocklist.
+     */
+    fun removeUserBlock(user: User, blockUserId: String): Task<Void>? {
+        if(!user.blockedUsers.contains(blockUserId)) {
+            Log.d(TAG, "User did not have the selected user blocked, doing nothing...")
+            return null
+        }
+        user.blockedUsers = user.blockedUsers - blockUserId
+        return firestore
+            .collection(FirestoreConstants.USER_COLLECTION)
+            .document(user.uid)
+            .set(user)
     }
 
     /**
@@ -109,6 +146,18 @@ class UserRepository @Inject constructor(
         //for large collections, this is bad, not scalable. but this app doesn't have large user base
         return firestore
             .collection(FirestoreConstants.USER_COLLECTION)
+            .get()
+    }
+
+    /**
+     * Finds [User] objects from firestore.
+     * @param userUidList The uid-s of the users.
+     * @return Async [Task].
+     */
+    fun getUsersByUid(userUidList: List<String>): Task<QuerySnapshot> {
+        return firestore
+            .collection(FirestoreConstants.USER_COLLECTION)
+            .whereIn(FirestoreConstants.USER_UID, userUidList)
             .get()
     }
 
@@ -139,6 +188,21 @@ fun createUid(): String {
 fun isContactOf(user: User, otherUser: User): Boolean {
     for (contactUid in user.contacts) {
         if(contactUid == otherUser.uid) {
+            return true
+        }
+    }
+    return false
+}
+
+/**
+ * Utility method to check if a user is blocked by another one.
+ * @param user The block list of this user will be checked.
+ * @param otherUser This user will be checked if they are blocked.
+ * @return True only if [otherUser] is blocked by [user].
+ */
+fun isBlockedBy(user: User, otherUser: User): Boolean {
+    for(blockedUid in user.blockedUsers) {
+        if(blockedUid == otherUser.uid) {
             return true
         }
     }

@@ -25,6 +25,8 @@ object NavDest {
     const val HOME_CHATS = "home_chats"
 
     const val HOME_CONTACTS = "home_contacts"
+
+    const val HOME_BLOCKED = "home_blocked"
 }
 
 /**
@@ -51,9 +53,9 @@ object NameLimits {
  */
 object SearchValues {
 
-    const val MIN_LENGTH = 3
+    const val MIN_LENGTH = NameLimits.MIN
 
-    const val MAX_LENGTH = 30
+    const val MAX_LENGTH = NameLimits.MAX
 
     /**
      * The number of milliseconds that passes after the user stopped typing, and the search begins.
@@ -74,6 +76,8 @@ object FirestoreConstants {
     const val USER_CHAT_ROOMS = "chatRooms"
 
     const val USER_CONTACTS = "contacts"
+
+    const val USER_BLOCKS = "blockedUsers"
 
     // --------------------- CHAT ROOM collection. -----------------------------------
 

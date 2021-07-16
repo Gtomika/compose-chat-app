@@ -31,14 +31,19 @@ sealed class HomeNavigationItem(
 
     object Chats : HomeNavigationItem(
         route = NavDest.HOME_CHATS,
-        icon = R.drawable.chat_icon,
+        icon = R.drawable.icon_chat,
         title = R.string.home_chats
     )
 
     object Contacts: HomeNavigationItem(
         route = NavDest.HOME_CONTACTS,
-        icon = R.drawable.contacts_icon,
+        icon = R.drawable.icon_contacts,
         title = R.string.home_contacts
     )
 
+    object Blocked: HomeNavigationItem(
+        route = NavDest.HOME_BLOCKED,
+        icon = R.drawable.icon_block,
+        title = R.string.home_blocked
+    )
 }
