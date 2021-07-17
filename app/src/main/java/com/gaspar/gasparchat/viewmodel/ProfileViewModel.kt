@@ -1,8 +1,10 @@
 package com.gaspar.gasparchat.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.compose.material.SnackbarDuration
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.InputField
@@ -11,6 +13,7 @@ import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -29,8 +32,8 @@ class ProfileViewModel @Inject constructor(
     val snackbarDispatcher: SnackbarDispatcher,
     val firebaseAuth: FirebaseAuth,
     private val userRepository: UserRepository,
-    application: GasparChatApplication
-): AndroidViewModel(application) {
+    @ApplicationContext private val context: Context
+): ViewModel() {
 
     /**
      * Stores if there is any loading in the profile screen.
@@ -87,8 +90,6 @@ class ProfileViewModel @Inject constructor(
      */
     private val _newPasswordAgain = MutableStateFlow(InputField())
     val newPasswordAgain: StateFlow<InputField> = _newPasswordAgain
-
-    private val context: Application = getApplication()
 
     fun redirectToLogin() {
         navigationDispatcher.dispatchNavigationCommand { navController ->

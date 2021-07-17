@@ -1,18 +1,21 @@
 package com.gaspar.gasparchat.viewmodel
 
-import android.app.Application
+import android.content.Context
 import android.os.CountDownTimer
 import android.util.Log
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarResult
 import androidx.compose.runtime.MutableState
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
+import com.gaspar.gasparchat.model.ChatRoomRepository
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.model.User
 import com.gaspar.gasparchat.model.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -24,8 +27,9 @@ class SearchViewModel @Inject constructor(
     private val navigationDispatcher: NavigationDispatcher,
     val snackbarDispatcher: SnackbarDispatcher,
     private val userRepository: UserRepository,
-    application: GasparChatApplication
-): AndroidViewModel(application) {
+    private val chatRoomRepository: ChatRoomRepository,
+    @ApplicationContext private val application: Context
+): ViewModel() {
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
@@ -46,8 +50,6 @@ class SearchViewModel @Inject constructor(
      * This timer watches when the user stopped typing.
      */
     private var searchStarterTimer: CountDownTimer? = null
-
-    private val context: Application = getApplication()
 
     /**
      * The currently logged in user, or null if for some error the user could not be obtained.
@@ -90,12 +92,12 @@ class SearchViewModel @Inject constructor(
         when {
             newValue.length < SearchValues.MIN_LENGTH -> {
                 //too short
-                val message = context.getString(R.string.search_too_short, SearchValues.MIN_LENGTH)
+                val message = application.getString(R.string.search_too_short, SearchValues.MIN_LENGTH)
                 _searchBar.value = searchBar.value.copy(input = newValue, isError = true, errorMessage = message)
             }
             newValue.length > SearchValues.MAX_LENGTH -> {
                 //too long
-                val message = context.getString(R.string.search_too_long, SearchValues.MAX_LENGTH)
+                val message = application.getString(R.string.search_too_long, SearchValues.MAX_LENGTH)
                 _searchBar.value = searchBar.value.copy(input = newValue, isError = true, errorMessage = message)
             }
             else -> {
@@ -152,7 +154,7 @@ class SearchViewModel @Inject constructor(
                 } else {
                     _loading.value = false
                     //the search failed
-                    val message = context.getString(R.string.search_failed)
+                    val message = application.getString(R.string.search_failed)
                     showSnackbar(message)
                 }
             }
@@ -160,11 +162,56 @@ class SearchViewModel @Inject constructor(
     }
 
     /**
-     * Called when an search result (describing a [User]) was clicked in the search result list.
+     * Called when an search result (describing a [User]) was clicked in the search result list. Initiates
+     * a chat between the current user and the selected search result user.
      * @param position The position of the result in the list.
      */
     fun onSearchResultClicked(position: Int) {
+        _loading.value = true
+        val failMessage = application.getString(R.string.search_failed_to_start_chat)
         Log.d(TAG, "Search result of ${searchResults.value[position].displayName} was clicked!")
+        //can generate the chatRoomUid from the user Uid-s
+        val chatRoomUid = chatRoomRepository.generateChatUid(user!!.uid, searchResults.value[position].uid)
+        //get chatroom see if it exists or not
+        chatRoomRepository.getChatRoom(chatRoomUid).addOnCompleteListener { chatRoomResult ->
+            if(chatRoomResult.isSuccessful && chatRoomResult.result != null) {
+                //query for chat room successful
+                if(chatRoomResult.result!!.exists()) {
+                    //this chat room already exists
+                    _loading.value = false
+                    navigateToChatRoom(chatRoomUid)
+                } else {
+                    //the chat room between these 2 users doesn't exist yet: CREATE it
+                    chatRoomRepository.createOneToOneChatRoom(userUid1 = user!!.uid, userUid2 = searchResults.value[position].uid)
+                        .addOnCompleteListener { chatRoomCreateResult ->
+                            if(chatRoomCreateResult.isSuccessful) {
+                                //chat room now exists, can open chat
+                                _loading.value = false
+                                navigateToChatRoom(chatRoomUid)
+                            } else {
+                                //failed to create chat room
+                                _loading.value = false
+                                showSnackbar(failMessage)
+                            }
+                        }
+                }
+            } else {
+                //failed to query chat room
+                _loading.value = false
+                showSnackbar(failMessage)
+            }
+        }
+    }
+
+    private fun navigateToChatRoom(chatRoomUid: String) {
+        Log.d(TAG, "Sending new chat room event, with chat room UID $chatRoomUid...")
+        //send event to load chat room
+        val event = ChatRoomChangedEvent(chatRoomUid)
+        EventBus.getDefault().post(event)
+        //navigate there
+        navigationDispatcher.dispatchNavigationCommand { navController ->
+            navController.navigate("${NavDest.CHAT_ROOM}/$chatRoomUid")
+        }
     }
 
     /**
@@ -180,7 +227,8 @@ class SearchViewModel @Inject constructor(
                    //update the search result list to show the added user as a contact
                    isContactState.value = true
                    //show snackbar
-                   val message = context.getString(R.string.search_added_as_contact, searchResults.value[position].displayName)
+                   val message = application.getString(R.string.search_added_as_contact,
+                       searchResults.value[position].displayName)
                    showSnackbar(message)
                }
             }
@@ -198,8 +246,8 @@ class SearchViewModel @Inject constructor(
                 //update state so screen recomposes
                 isBlockedState.value = true
                 //show snackbar
-                val message = context.getString(R.string.search_block_successful, searchResults.value[position].displayName)
-                val actionLabel = context.getString(R.string.undo)
+                val message = application.getString(R.string.search_block_successful, searchResults.value[position].displayName)
+                val actionLabel = application.getString(R.string.undo)
                 val onActionClicked = {
                     userRepository.removeUserBlock(user!!, searchResults.value[position].uid)
                         ?.addOnSuccessListener {

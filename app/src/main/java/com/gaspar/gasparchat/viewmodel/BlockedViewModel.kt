@@ -1,9 +1,11 @@
 package com.gaspar.gasparchat.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarResult
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.BlocklistChangedEvent
 import com.gaspar.gasparchat.GasparChatApplication
@@ -12,6 +14,7 @@ import com.gaspar.gasparchat.SnackbarDispatcher
 import com.gaspar.gasparchat.model.User
 import com.gaspar.gasparchat.model.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -24,8 +27,8 @@ import javax.inject.Inject
 class BlockedViewModel @Inject constructor(
     val snackbarDispatcher: SnackbarDispatcher,
     private val userRepository: UserRepository,
-    application: GasparChatApplication
-): AndroidViewModel(application) {
+    @ApplicationContext private val context: Context
+): ViewModel() {
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
@@ -35,8 +38,6 @@ class BlockedViewModel @Inject constructor(
 
     private val _blockedUsers = MutableStateFlow(listOf<User>())
     val blockedUsers: StateFlow<List<User>> = _blockedUsers
-
-    private val context: Application = getApplication()
 
     init {
         EventBus.getDefault().register(this)

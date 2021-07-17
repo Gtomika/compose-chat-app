@@ -212,7 +212,8 @@ fun SearchResultContent(
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
                             .padding(end = 8.dp),
-                        style = MaterialTheme.typography.body1
+                        style = MaterialTheme.typography.body1,
+                        color = MaterialTheme.colors.error
                     )
                 }
                 else -> { //no contact with this user so far
@@ -228,7 +229,8 @@ fun SearchResultContent(
                         IconButton(onClick = { onBlockClicked.invoke(position, isBlocked) }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.icon_block),
-                                contentDescription = stringResource(id = R.string.search_blocked)
+                                contentDescription = stringResource(id = R.string.search_blocked),
+                                tint = MaterialTheme.colors.error
                             )
                         }
                     }

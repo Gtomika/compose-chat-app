@@ -14,7 +14,7 @@ data class ChatRoom(
      * Unique identifier of the chat room. This is the document key in firestore collection
      */
     @PropertyName(FirestoreConstants.CHAT_ROOM_UID)
-    var chatUid: String = createUid(),
+    var chatUid: String = "",
 
     /**
      * Name of the chat room. In case of one-to-one chat rooms, this is created from the uid of the 2 users,

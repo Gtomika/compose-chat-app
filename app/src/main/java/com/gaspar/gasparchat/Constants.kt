@@ -22,6 +22,10 @@ object NavDest {
 
     const val SEARCH = "search"
 
+    const val CHAT_ROOM = "chatRoom"
+
+    const val CHAT_ROOM_UID = "chatRoomUid"
+
     //home screen sub navigation
 
     const val HOME_CHATS = "home_chats"
@@ -117,3 +121,9 @@ object BlocklistChangedEvent
  */
 @Keep
 object ContactsChangedEvent
+
+/**
+ * Message type that is fired when a component signals that a new chat room should be loaded.
+ */
+@Keep
+class ChatRoomChangedEvent(val chatRoomId: String)

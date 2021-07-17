@@ -1,13 +1,16 @@
 package com.gaspar.gasparchat.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.compose.material.SnackbarDuration
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.InputField
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -24,8 +27,8 @@ class LoginViewModel @Inject constructor(
     private val navigationDispatcher: NavigationDispatcher,
     val snackbarDispatcher: SnackbarDispatcher,
     private val firebaseAuth: FirebaseAuth,
-    application: GasparChatApplication
-): AndroidViewModel(application) {
+    @ApplicationContext private val context: Context
+): ViewModel() {
 
     /**
      * State of the email.
@@ -52,8 +55,6 @@ class LoginViewModel @Inject constructor(
      */
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
-
-    private val context: Application = getApplication()
 
     fun onEmailChanged(newEmailValue: String) {
         if(newEmailValue.isBlank()) {

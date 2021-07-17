@@ -15,9 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.gaspar.gasparchat.ui.theme.GasparChatTheme
 import com.gaspar.gasparchat.view.*
-import com.gaspar.gasparchat.viewmodel.LoginViewModel
-import com.gaspar.gasparchat.viewmodel.RegisterViewModel
-import com.gaspar.gasparchat.viewmodel.SearchViewModel
+import com.gaspar.gasparchat.viewmodel.*
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -60,6 +58,8 @@ fun MainActivityContent(
         Surface(color = MaterialTheme.colors.background) {
             //create nav controller
             val navController = rememberNavController()
+            //create chat room view model, this needs to exist ASAP
+            val chatRoomViewModel = hiltViewModel<ChatRoomViewModel>()
             //build nav host, start is HOME, but it redirects to LOGIN if needed
             NavHost(navController = navController, startDestination = NavDest.HOME) {
                 //redirect to login screen
@@ -84,6 +84,14 @@ fun MainActivityContent(
                 composable(route = NavDest.SEARCH) {
                     val viewModel = hiltViewModel<SearchViewModel>() //this view model will always reset when showing this screen
                     SearchContent(viewModel = viewModel)
+                }
+                //redirect to a chat room: REQUIRES CHAT UID
+                composable(route = "${NavDest.CHAT_ROOM}/{${NavDest.CHAT_ROOM_UID}}") { navBackStackEntry ->
+                    val chatRoomUid = navBackStackEntry.arguments!!.getString(NavDest.CHAT_ROOM_UID) ?: ""
+                    ChatRoomContent(
+                        chatRoomUid = chatRoomUid,
+                        viewModel = chatRoomViewModel
+                    )
                 }
             }
             //observe incoming navigation commands

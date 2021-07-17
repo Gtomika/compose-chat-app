@@ -1,9 +1,11 @@
 package com.gaspar.gasparchat.viewmodel
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.compose.material.SnackbarDuration
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.InputField
@@ -14,6 +16,7 @@ import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -31,8 +34,8 @@ class RegisterViewModel @Inject constructor(
     val snackbarDispatcher: SnackbarDispatcher,
     private val firebaseAuth: FirebaseAuth,
     private val userRepository: UserRepository,
-    application: GasparChatApplication
-): AndroidViewModel(application) {
+    @ApplicationContext private val context: Context
+): ViewModel() {
 
     private val _email = MutableStateFlow(InputField())
     val email: StateFlow<InputField> = _email
@@ -54,8 +57,6 @@ class RegisterViewModel @Inject constructor(
      */
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
-
-    private val context: Application = getApplication()
 
     /**
      * Stores if the last register attempt failed. This is cleared in any modification. Used to prevent

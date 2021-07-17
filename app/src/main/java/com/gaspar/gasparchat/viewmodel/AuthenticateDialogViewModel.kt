@@ -19,8 +19,8 @@ typealias StringMethod = (String) -> Unit
 
 @HiltViewModel
 class AuthenticateDialogViewModel @Inject constructor(
-    application: GasparChatApplication
-): AndroidViewModel(application) {
+    @ApplicationContext private val context: Context
+): ViewModel() {
 
     /**
      * Displayed password inside the authenticate dialog
@@ -46,8 +46,6 @@ class AuthenticateDialogViewModel @Inject constructor(
      */
     var onDialogConfirmed: StringMethod = {}
         private set
-
-    private val context: Application = getApplication()
 
     /**
      * Called when typed password value changes.

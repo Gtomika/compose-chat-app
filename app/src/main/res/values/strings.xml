@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">G-Chat</string>
+    <string name="app_name">Családi Chat</string>
     <string name="yes">Igen</string>
     <string name="no">Nem</string>
     <string name="info">Infó</string>
@@ -82,5 +82,8 @@
     <string name="search_already_contact">Ismered őt!</string>
     <string name="search_blocked">Letiltottad!</string>
     <string name="search_block_successful">Letiltottad %1$s-t!</string>
+    <string name="search_failed_to_start_chat">A beszélgetés indítása nem sikerült!</string>
+
+    <string name="chat_load_fail">A beszélgetés betöltése nem sikerült.</string>
 
 </resources>
