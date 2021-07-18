@@ -69,6 +69,12 @@ object SearchValues {
     const val SEARCH_DELAY: Long = 1000
 }
 
+object MessageValues {
+
+    const val MAX_LENGTH = 600
+
+}
+
 object FirestoreConstants {
 
     // --------------------- USER collection. -----------------------------------

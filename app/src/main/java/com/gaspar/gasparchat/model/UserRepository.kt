@@ -8,7 +8,6 @@ import com.gaspar.gasparchat.viewmodel.VoidMethod
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
@@ -95,11 +94,11 @@ class UserRepository @Inject constructor(
             Log.d(TAG, "User already had this contact, doing nothing and returning null...")
             return null
         }
-        user.contacts = user.contacts + contactUserUid
+        val newUser = user.copy(contacts = user.contacts + contactUserUid)
         return firestore
             .collection(FirestoreConstants.USER_COLLECTION)
-            .document(user.uid)
-            .set(user)
+            .document(newUser.uid)
+            .set(newUser)
     }
 
     /**
@@ -113,29 +112,84 @@ class UserRepository @Inject constructor(
             Log.d(TAG, "User already had the selected user blocked, doing nothing and returning null...")
             return null
         }
-        user.blockedUsers = user.blockedUsers + blockUserId
+        val newUser = user.copy(blockedUsers = user.blockedUsers + blockUserId)
         return firestore
             .collection(FirestoreConstants.USER_COLLECTION)
-            .document(user.uid)
-            .set(user)
+            .document(newUser.uid)
+            .set(newUser)
+    }
+
+    /**
+     * Adds a list of other users to a users block list. Only adds those who are not already blocked.
+     * @param user The user whose block list will be expanded.
+     * @param blockUserIds The list of UIDs of the users who will be blocked by [user].
+     * @return Async [Task] or null if all of [blockUserIds] was already blocked by [user] and there is nothing to be done.
+     */
+    fun addUserBlocks(user: User, blockUserIds: List<String>): Task<Void>? {
+        val notBlockedUsers = mutableListOf<String>()
+        for(blockUserId in blockUserIds) {
+           if(!user.blockedUsers.contains(blockUserId)) {
+               //this user is not blocked, not they will be
+               notBlockedUsers.add(blockUserId)
+           }
+        }
+        return if(notBlockedUsers.isNotEmpty()) {
+            //there are users who must be blocked
+            val newUser = user.copy(blockedUsers = user.blockedUsers + notBlockedUsers.toList())
+            return firestore
+                .collection(FirestoreConstants.USER_COLLECTION)
+                .document(newUser.uid)
+                .set(newUser)
+        } else {
+            Log.d(TAG, "All of the given users were already blocked, doing nothing...")
+            null //no users present who are not blocked yet
+        }
     }
 
     /**
      * Removes a [User] from another users block list.
      * @param user Whose block list will be shortened.
-     * @param blockUserId Who will be removed from the block list.
+     * @param unblockUserId Who will be removed from the block list.
      * @return Async [Task] or null if the user was not even on the blocklist.
      */
-    fun removeUserBlock(user: User, blockUserId: String): Task<Void>? {
-        if(!user.blockedUsers.contains(blockUserId)) {
+    fun removeUserBlock(user: User, unblockUserId: String): Task<Void>? {
+        if(!user.blockedUsers.contains(unblockUserId)) {
             Log.d(TAG, "User did not have the selected user blocked, doing nothing...")
             return null
         }
-        user.blockedUsers = user.blockedUsers - blockUserId
+        val newUser = user.copy(blockedUsers = user.blockedUsers - unblockUserId)
         return firestore
             .collection(FirestoreConstants.USER_COLLECTION)
-            .document(user.uid)
-            .set(user)
+            .document(newUser.uid)
+            .set(newUser)
+    }
+
+    /**
+     * Removes a list of [User]s from another users block list.
+     * @param user Whose block list will be shortened.
+     * @param unblockUserIds List of who will be removed from the block list.
+     * @return Async [Task] or null if none of [unblockUserIds] was even blocked.
+     */
+    fun removeUserBlocks(user: User, unblockUserIds: List<String>): Task<Void>? {
+        val blockedUsers = mutableListOf<String>()
+        for(unblockUserId in unblockUserIds) {
+            if(user.blockedUsers.contains(unblockUserId)) {
+                //this user is actually blocked, can unblock them
+                blockedUsers.add(unblockUserId)
+            }
+        }
+        //now for those actually blocked, unblock them
+        return if(blockedUsers.isNotEmpty()) {
+            val newUser = user.copy(blockedUsers = user.blockedUsers - blockedUsers.toList())
+            firestore
+                .collection(FirestoreConstants.USER_COLLECTION)
+                .document(newUser.uid)
+                .set(newUser)
+        } else {
+            //nobody needs to be unblocked
+            Log.d(TAG, "None of the users were even blocked, doing nothing...")
+            null
+        }
     }
 
     /**
@@ -177,7 +231,7 @@ class UserRepository @Inject constructor(
                 .set(updatedUser)
         } else {
             Log.d(TAG, "${user.displayName} was already in chat room!")
-            null
+            return null
         }
     }
 

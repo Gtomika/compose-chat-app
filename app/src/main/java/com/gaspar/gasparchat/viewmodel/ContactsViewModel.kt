@@ -133,7 +133,7 @@ class ContactsViewModel @Inject constructor(
         EventBus.getDefault().post(event)
         //navigate there
         navigationDispatcher.dispatchNavigationCommand { navController ->
-            navController.navigate("${NavDest.CHAT_ROOM}/$chatRoomUid")
+            navController.navigate(NavDest.CHAT_ROOM)
         }
     }
 

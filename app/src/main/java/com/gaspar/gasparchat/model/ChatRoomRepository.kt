@@ -116,34 +116,39 @@ class ChatRoomRepository @Inject constructor(
 
     /**
      * Generates a chat room UID from the UIDs of the two [User]s. This is not that long of a string,
-     * so no shortening is applied.
+     * so no shortening is applied. The order of the 2 users do not matter.
      * @param userUid1 The UID of the first user.
      * @param userUid2 The UID of the second user.
      * @return A UID for the chat room between these 2 users.
      */
     fun generateChatUid(userUid1: String, userUid2: String): String {
-        return userUid1 + userUid2
+        return if(userUid1 < userUid2) {
+            userUid1 + userUid2
+        } else {
+            userUid2 + userUid1
+        }
     }
 
     /**
      * Generates a chat room UID from a list of [User] UIDs. This could be a long string, so shortening
-     * is applied.
+     * is applied. The order of the users do not matter.
      * @param userUidList List of [User] UIDs.
      * @return A UID string created from the user UIDs.
      */
     fun generateChatUid(userUidList: List<String>): String {
+        val orderedUserUidList = userUidList.sorted()
         val chatRoomUid: String
         when {
-            userUidList.size < 2 -> {
+            orderedUserUidList.size < 2 -> {
                 throw RuntimeException("Chat room ID needs at least 2 user UID-s!")
             }
-            userUidList.size == 2 -> {
+            orderedUserUidList.size == 2 -> {
                 //group with only 2 members
-                chatRoomUid = generateChatUid(userUidList[0], userUidList[1])
+                chatRoomUid = generateChatUid(orderedUserUidList[0], orderedUserUidList[1])
             }
             else -> {
                 var longUid = ""
-                userUidList.forEach { userUid ->
+                orderedUserUidList.forEach { userUid ->
                     longUid += userUid
                 }
                 //group with more then two members, UID needs shortening

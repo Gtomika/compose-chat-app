@@ -9,6 +9,7 @@ import androidx.compose.runtime.MutableState
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavDeepLinkRequest
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.ChatRoomRepository
 import com.gaspar.gasparchat.model.InputField
@@ -81,7 +82,7 @@ class SearchViewModel @Inject constructor(
      */
     fun goBack() {
         navigationDispatcher.dispatchNavigationCommand { navController ->
-            navController.popBackStack(NavDest.HOME, false)
+            navController.navigateUp()
         }
     }
 
@@ -210,7 +211,7 @@ class SearchViewModel @Inject constructor(
         EventBus.getDefault().post(event)
         //navigate there
         navigationDispatcher.dispatchNavigationCommand { navController ->
-            navController.navigate("${NavDest.CHAT_ROOM}/$chatRoomUid")
+            navController.navigate(NavDest.CHAT_ROOM)
         }
     }
 

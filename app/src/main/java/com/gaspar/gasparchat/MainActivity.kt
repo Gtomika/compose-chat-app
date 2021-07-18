@@ -86,12 +86,8 @@ fun MainActivityContent(
                     SearchContent(viewModel = viewModel)
                 }
                 //redirect to a chat room: REQUIRES CHAT UID
-                composable(route = "${NavDest.CHAT_ROOM}/{${NavDest.CHAT_ROOM_UID}}") { navBackStackEntry ->
-                    val chatRoomUid = navBackStackEntry.arguments!!.getString(NavDest.CHAT_ROOM_UID) ?: ""
-                    ChatRoomContent(
-                        chatRoomUid = chatRoomUid,
-                        viewModel = chatRoomViewModel
-                    )
+                composable(route = NavDest.CHAT_ROOM) {
+                    ChatRoomContent(viewModel = chatRoomViewModel)
                 }
             }
             //observe incoming navigation commands

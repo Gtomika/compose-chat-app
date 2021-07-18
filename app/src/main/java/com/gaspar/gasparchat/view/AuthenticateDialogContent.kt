@@ -48,7 +48,7 @@ fun AuthenticateDialogContent(
              Spacer(modifier = Modifier.height(16.dp))
              PasswordInput(
                 passwordInputField = viewModel.password,
-                labelText = stringResource(R.string.authneticate_dialog_current_password),
+                labelText = stringResource(R.string.authenticate_dialog_current_password),
                 onPasswordChanged = viewModel::onPasswordChanged,
                 focusRequester = focusRequester,
                 focusRequesterNext = null
