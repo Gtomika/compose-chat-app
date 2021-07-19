@@ -12,27 +12,26 @@ import java.util.*
 data class Message(
 
     /**
-     * Unique identifier of the message.
+     * Unique identifier of the message. Auto generated.
      */
     @PropertyName(FirestoreConstants.MESSAGE_UID)
-    val messageUid: String = createUid(),
+    var messageUid: String = createUid(),
 
     /**
      * Text contents of the message.
      */
     @PropertyName(FirestoreConstants.MESSAGE_TEXT)
-    val messageText: String = "",
+    var messageText: String = "",
 
     /**
-     * Time when the message was sent. This is populated by firestore.
+     * Time when the message was sent. Auto generated.
      */
     @PropertyName(FirestoreConstants.MESSAGE_TIME)
-    @ServerTimestamp
-    val messageTime: Date? = null,
+    var messageTime: Date = Date(),
 
     /**
      * Uid of the [User] who sent the message
      */
     @PropertyName(FirestoreConstants.MESSAGE_SENDER_UID)
-    val senderUid: String = ""
+    var senderUid: String = ""
 )

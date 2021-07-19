@@ -109,7 +109,7 @@ object FirestoreConstants {
 
     const val MESSAGE_UID = "messageUid"
 
-    const val MESSAGE_TEXT = "text"
+    const val MESSAGE_TEXT = "messageText"
 
     const val MESSAGE_TIME = "sendTime"
 

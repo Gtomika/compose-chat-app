@@ -99,5 +99,7 @@
     <string name="chat_message_empty">Az üzenet nem lehet üres!</string>
     <string name="chat_message_too_long">Az üzenet max %1$d karakter hoszú lehet (most %2$d).</string>
     <string name="chat_send_message">Üzenet küldése</string>
+    <string name="chat_profile_picture">Profilkép</string>
+    <string name="chat_message_send_fail">Az üzenet elküldése nem sikerült!</string>
 
 </resources>

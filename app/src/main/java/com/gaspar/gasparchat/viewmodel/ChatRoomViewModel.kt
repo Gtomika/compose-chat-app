@@ -1,12 +1,10 @@
 package com.gaspar.gasparchat.viewmodel
 
-import android.app.Application
 import android.content.Context
 import android.util.Log
 import androidx.annotation.Keep
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarResult
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
@@ -29,6 +27,11 @@ class ChatRoomViewModel @Inject constructor(
     private val snackbarDispatcher: SnackbarDispatcher,
     private val navigationDispatcher: NavigationDispatcher
 ): ViewModel() {
+
+    /**
+     * Stores if the chat room view model is currently displaying.
+     */
+    var displaying = false
 
     /**
      * Stores is a background task in ongoing.
@@ -110,7 +113,7 @@ class ChatRoomViewModel @Inject constructor(
         getChatRoomAndMembers(event.chatRoomId)
     }
 
-    @Subscribe
+    @Subscribe(threadMode = ThreadMode.MAIN)
     fun onLoadingProcessFinished(event: LoadingFinishedEvent) {
         loadingProcessAmount--
         Log.d(TAG, "A loading process finished, $loadingProcessAmount remains.")
@@ -129,6 +132,15 @@ class ChatRoomViewModel @Inject constructor(
             _title.value = getChatRoomTitle()
             //hide loading
             _loading.value = false
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onMessageReceived(event: MessageReceivedEvent) {
+        //only reload when chat room is VISIBLE and this chat room received message event.
+        if(displaying && event.chatRoomUid == chatRoom.value.chatUid) {
+            Log.d(TAG, "Displayed Chat Room received new message, reloading...")
+            reloadMessages(event.chatRoomUid)
         }
     }
 
@@ -218,6 +230,7 @@ class ChatRoomViewModel @Inject constructor(
                                 Log.d(TAG, "Received Message objects that belong to this chat room!")
                                 //messages, users and chat room is downloaded
                                 _messages.value = messagesResult.result!!.toObjects(Message::class.java)
+                                Log.d(TAG, "${messages.value}")
                                 //all good, this loading chain is done
                             } else {
                                 //failed to get message objects
@@ -231,6 +244,18 @@ class ChatRoomViewModel @Inject constructor(
         }
     }
 
+    private fun reloadMessages(chatRoomUid: String) {
+        chatRoomRepository.getMessagesOfChatRoom(chatRoomUid).addOnCompleteListener { reloadResult ->
+            if(reloadResult.isSuccessful && reloadResult.result != null) {
+                Log.d(TAG, "Reloaded messages in current displayed chat room!")
+                _messages.value = reloadResult.result!!.toObjects(Message::class.java)
+            } else {
+                val message = context.getString(R.string.chat_load_fail)
+                showSnackbar(message)
+            }
+        }
+    }
+
     /**
      * @return True only if there are exactly 2 participants.
      */
@@ -239,6 +264,9 @@ class ChatRoomViewModel @Inject constructor(
     }
 
     fun onBackClicked() {
+        //mark no longer displaying
+        displaying = false
+        //navigate back
         navigationDispatcher.dispatchNavigationCommand { navController ->
             navController.navigateUp()
         }
@@ -394,10 +422,6 @@ class ChatRoomViewModel @Inject constructor(
 
     fun onTypedMessageChanged(newMessage: String) {
         when {
-            newMessage.isBlank() -> {
-                val message = context.getString(R.string.chat_message_empty)
-                _typedMessage.value = typedMessage.value.copy(input = newMessage, isError = true, errorMessage = message)
-            }
             newMessage.length > MessageValues.MAX_LENGTH -> {
                 val message = context.getString(R.string.chat_message_too_long, MessageValues.MAX_LENGTH, newMessage.length)
                 _typedMessage.value = typedMessage.value.copy(input = newMessage, isError = true, errorMessage = message)
@@ -408,8 +432,36 @@ class ChatRoomViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Called when the user clicks send message. The typed message is assumed to be valid.
+     */
     fun onMessageSent() {
+        //create message object, UID and timestamp are auto generated
+        val message = Message(
+            messageText = typedMessage.value.input,
+            senderUid = localUser.value.uid
+        )
+        //update messages instantly, assuming success
+        _messages.value = messages.value + message
+        //clear typed message
+        _typedMessage.value = typedMessage.value.copy(input = "", isError = false)
+        //start async task that sends message to firestore
+        chatRoomRepository.addMessageToChatRoom(chatRoomUid = chatRoom.value.chatUid, message = message)
+            .addOnCompleteListener { messageResult ->
+                if(!messageResult.isSuccessful) {
+                    val error = context.getString(R.string.chat_message_send_fail)
+                    showSnackbar(error)
+                }
+            }
+    }
 
+    fun findDisplayNameForUid(userUid: String): String {
+        for(user in users.value) {
+            if(user.uid == userUid) {
+                return user.displayName
+            }
+        }
+        return "Unknown"
     }
 
     /**
@@ -443,3 +495,9 @@ class ChatRoomViewModel @Inject constructor(
  */
 @Keep
 object LoadingFinishedEvent
+
+/**
+ * Sent when this chat room gets a new message.
+ */
+@Keep
+class MessageReceivedEvent(val chatRoomUid: String)

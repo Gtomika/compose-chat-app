@@ -1,5 +1,6 @@
 package com.gaspar.gasparchat.view
 
+import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -11,7 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.runtime.Composable
@@ -21,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusOrder
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -30,23 +30,31 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.constraintlayout.compose.ConstraintLayout
 import com.gaspar.gasparchat.R
+import com.gaspar.gasparchat.TAG
 import com.gaspar.gasparchat.model.Message
 import com.gaspar.gasparchat.viewmodel.ChatRoomViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
 @ExperimentalComposeUiApi
 @ExperimentalAnimationApi
 @Composable
 fun ChatRoomContent(viewModel: ChatRoomViewModel) {
+    //if this is composed, then chat room view model is displaying stuff
+    viewModel.displaying = true
+
     val scaffoldState = rememberScaffoldState()
     Scaffold(
         scaffoldState = scaffoldState,
         topBar = { ChatRoomTopBar(viewModel) },
         bottomBar = { SendMessageContent(viewModel) }
-    ) {
-        ChatRoomBody(viewModel = viewModel)
+    ) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues)) {
+            ChatRoomBody(viewModel = viewModel)
+        }
     }
 }
 
@@ -151,7 +159,8 @@ fun ColumnScope.ChatRoomBlockedWarning() {
         color = MaterialTheme.colors.error,
         border = BorderStroke(1.dp, Color.Black),
         shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 8.dp, bottomEnd = 8.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .weight(0.1f)
     ) {
         Text(
@@ -165,13 +174,32 @@ fun ColumnScope.ChatRoomBlockedWarning() {
 }
 
 @Composable
-fun ColumnScope.MessagesContent(viewModel: ChatRoomViewModel) {
+fun MessagesContent(viewModel: ChatRoomViewModel) {
     val messages = viewModel.messages.collectAsState()
     if(messages.value.isNotEmpty()) {
         //there are messages
-        LazyColumn(modifier = Modifier.fillMaxWidth().weight(0.8f)) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Bottom
+        ) {
             itemsIndexed(messages.value) { position, message ->
-                MessageContent(position, message)
+                val localMessage = message.senderUid == viewModel.localUser.value.uid
+                if(localMessage) {
+                    LocalMessageContent(
+                        position = position,
+                        messageText = message.messageText,
+                        senderDisplayName = viewModel.localUser.value.displayName,
+                        sendTime = message.messageTime
+                    )
+                } else {
+                    val senderDisplayName = remember(message) { viewModel.findDisplayNameForUid(message.senderUid) }
+                    MessageContent(
+                        position = position,
+                        messageText = message.messageText,
+                        senderDisplayName = senderDisplayName,
+                        sendTime = message.messageTime
+                    )
+                }
             }
         }
     } else {
@@ -187,12 +215,147 @@ fun ColumnScope.MessagesContent(viewModel: ChatRoomViewModel) {
     }
 }
 
+@Preview
+@Composable
+fun PreviewMessageContent() {
+    val message = Message(messageText = "This is a text message")
+    MessageContent(
+        position = 0,
+        messageText = message.messageText,
+        senderDisplayName = "Teszt Géza",
+        sendTime = message.messageTime
+    )
+}
+
+
+
 @Composable
 fun MessageContent(
     position: Int,
-    message: Message
+    messageText: String,
+    senderDisplayName: String,
+    sendTime: Date
 ) {
-    //TODO
+    val formatter = remember { SimpleDateFormat("yyyy.MM.dd '-' HH:mm a", Locale.ENGLISH) }
+    val formattedSendTime = remember(sendTime) { formatter.format(sendTime) }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .align(Alignment.Start),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.Start,
+        ) {
+            //TODO can be replaced with profile picture
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = stringResource(id = R.string.chat_profile_picture),
+                modifier = Modifier.padding(top = 16.dp, end = 8.dp)
+            )
+            Column(verticalArrangement = Arrangement.Top) {
+                //display name of sender
+                Text(
+                    text = senderDisplayName,
+                    style = MaterialTheme.typography.overline,
+                    modifier = Modifier.align(Alignment.Start).padding(bottom = 2.dp)
+                )
+                //message surface
+                Surface(
+                    modifier = Modifier
+                        .wrapContentWidth(),
+                    shape = RoundedCornerShape(size = 8.dp),
+                    elevation = 5.dp,
+                    color = Color.Gray,
+                ) {
+                    Text(
+                        text = messageText,
+                        style = MaterialTheme.typography.body1,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+                //message send time
+                Text(
+                    text = formattedSendTime,
+                    style = MaterialTheme.typography.overline,
+                    modifier = Modifier.align(Alignment.End).padding(top = 2.dp)
+                )
+            }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun PreviewLocalMessageContent() {
+    val message = Message(messageText = "This is a local user message.")
+    LocalMessageContent(
+        position = 0,
+        messageText = message.messageText,
+        senderDisplayName = "Gáspár Tamás",
+        sendTime = message.messageTime
+    )
+}
+
+@Composable
+fun LocalMessageContent(
+    position: Int,
+    messageText: String,
+    senderDisplayName: String,
+    sendTime: Date
+) {
+    val formatter = remember { SimpleDateFormat("yyyy.MM.dd '-' HH:mm a", Locale.ENGLISH) }
+    val formattedSendTime = remember(sendTime) { formatter.format(sendTime) }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.End
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .align(Alignment.End),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.End,
+        ) {
+            Column(verticalArrangement = Arrangement.Top) {
+                //display name of sender
+                Text(
+                    text = senderDisplayName,
+                    style = MaterialTheme.typography.overline,
+                    modifier = Modifier.align(Alignment.End).padding(bottom = 2.dp)
+                )
+                //message surface
+                Surface(
+                    modifier = Modifier.wrapContentWidth(),
+                    shape = RoundedCornerShape(size = 8.dp),
+                    elevation = 5.dp,
+                    color = MaterialTheme.colors.primary,
+                ) {
+                    Text(
+                        text = messageText,
+                        style = MaterialTheme.typography.body1,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+                //message send time
+                Text(
+                    text = formattedSendTime,
+                    style = MaterialTheme.typography.overline,
+                    modifier = Modifier.align(Alignment.Start).padding(top = 2.dp)
+                )
+            }
+            //TODO can be replaced with profile picture
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = stringResource(id = R.string.chat_profile_picture),
+                modifier = Modifier.padding(top = 16.dp, start = 8.dp)
+            )
+        }
+    }
 }
 
 @ExperimentalComposeUiApi
@@ -219,15 +382,17 @@ fun SendMessageContent(viewModel: ChatRoomViewModel) {
             keyboardActions = KeyboardActions(
                 onDone = { keyboardController?.hide() },
             ),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 8.dp)
                 .weight(0.9f),
             isError = message.value.isError,
             maxLines = 3
         )
         IconButton(
             onClick = viewModel::onMessageSent,
-            enabled = !message.value.isError,
-            modifier = Modifier.padding(end = 16.dp, top = 8.dp, bottom = 8.dp)
+            enabled = message.value.input.isNotBlank() && !message.value.isError,
+            modifier = Modifier
+                .padding(end = 16.dp, top = 8.dp, bottom = 8.dp)
                 .weight(0.1f)
         ) {
             Icon(
