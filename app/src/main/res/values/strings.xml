@@ -5,6 +5,11 @@
     <string name="info">Infó</string>
     <string name="undo">Visszavonás</string>
     <string name="retry">Újra</string>
+    <string name="gaspar_chat_notification_channel">Családi Chat Értesítések</string>
+    <string name="gaspar_chat_notification_channel_desc">Megjeleníti az alkalmazás értesítéseit.</string>
+    <string name="gaspar_chat_notification_channel_id">gaspar_chat_notification_channel</string>
+    <string name="google_play_success">Most már elérhetőek a Google Play Szolgáltatások!</string>
+    <string name="google_play_fail">Nem sikerült telepíteni Google Play Szolgáltatásokat!</string>
 
     <string name="login_prompt">Kérlek jelentkezz be!</string>
     <string name="login_email">Email cím</string>

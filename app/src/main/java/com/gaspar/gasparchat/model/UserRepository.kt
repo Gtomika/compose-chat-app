@@ -1,16 +1,16 @@
 package com.gaspar.gasparchat.model
 
+import android.content.Context
 import android.util.Log
 import androidx.annotation.Nullable
-import com.gaspar.gasparchat.FirestoreConstants
-import com.gaspar.gasparchat.TAG
+import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.viewmodel.VoidMethod
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
-import com.google.firebase.firestore.SetOptions
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.*
 import javax.inject.Inject
 
@@ -21,7 +21,8 @@ import javax.inject.Inject
  */
 class UserRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth,
+    @ApplicationContext private val context: Context
 ) {
 
     /**
@@ -37,12 +38,19 @@ class UserRepository @Inject constructor(
     }
 
     /**
-     * Called when a user registered to the application. Creates their data in the users collection
+     * Called when a user registered to the application. Creates their data in the users collection. The
+     * FCM message token of this device will be bound to this users account.
      * @param firebaseUser The [FirebaseUser] created after registration. will be converted into [User].
      * @return Async [Task], can be used to add callbacks.
      */
     fun addUser(firebaseUser: FirebaseUser): Task<Void> {
         val user = firebaseUserToUser(firebaseUser)
+
+        //get message token
+        val prefs = context.getSharedPreferences(GASPAR_CHAT_PREFERENCES, Context.MODE_PRIVATE)
+        user.messageToken = prefs.getString(MESSAGE_TOKEN_PREFERENCE, TOKEN_NOT_FOUND) ?: TOKEN_NOT_FOUND
+        Log.d(TAG, "Creating user, message token retrieved from preferences: ${user.messageToken}")
+
         return firestore
             .collection(FirestoreConstants.USER_COLLECTION)
             .document(user.uid)
@@ -70,16 +78,37 @@ class UserRepository @Inject constructor(
     }
 
     /**
-     * Updates [User] display name in the database.
-     * @param firebaseUser Firebase user object. It should already have the updated display name.
-     * @return Async [Task], can be used to add callbacks.
+     * Updates the [User]s FCM message token stored in firestore, with the current device's message
+     * token. This is used on 2 occasions:
+     *  - When a user logs in: This will make sure he gets FCM messages on the device he logged in.
+     *  - When [GasparChatMessageService.onNewToken] is fired and a user is logged in. It will update their
+     *      token in the database.
+     * @param userUid UID if the user who will have his message token updated.
+     * @return Async [Task].
      */
-    fun updateUserDisplayName(firebaseUser: FirebaseUser): Task<Void> {
-        val user = firebaseUserToUser(firebaseUser)
+    fun updateUserMessageToken(userUid: String): Task<Void> {
+        //get device message token
+        val prefs = context.getSharedPreferences(GASPAR_CHAT_PREFERENCES, Context.MODE_PRIVATE)
+        val deviceMessageToken = prefs.getString(MESSAGE_TOKEN_PREFERENCE, TOKEN_NOT_FOUND) ?: TOKEN_NOT_FOUND
+        Log.d(TAG, "Updating message token, retrieved from preferences: $deviceMessageToken")
+        //update
         return firestore
             .collection(FirestoreConstants.USER_COLLECTION)
-            .document(user.uid)
-            .set(user, SetOptions.merge())
+            .document(userUid)
+            .update(FirestoreConstants.USER_MESSAGE_TOKEN, deviceMessageToken)
+    }
+
+    /**
+     * Updates [User] display name in the database.
+     * @param userUid UID of the user whose name will be updated.
+     * @param displayName The new display name.
+     * @return Async [Task], can be used to add callbacks.
+     */
+    fun updateUserDisplayName(userUid: String, displayName: String): Task<Void> {
+        return firestore
+            .collection(FirestoreConstants.USER_COLLECTION)
+            .document(userUid)
+            .update(FirestoreConstants.USER_DISPLAY_NAME, displayName)
     }
 
     /**
@@ -94,11 +123,11 @@ class UserRepository @Inject constructor(
             Log.d(TAG, "User already had this contact, doing nothing and returning null...")
             return null
         }
-        val newUser = user.copy(contacts = user.contacts + contactUserUid)
+        val updatedContacts = user.contacts + contactUserUid
         return firestore
             .collection(FirestoreConstants.USER_COLLECTION)
-            .document(newUser.uid)
-            .set(newUser)
+            .document(user.uid)
+            .update(FirestoreConstants.USER_CONTACTS, updatedContacts)
     }
 
     /**
@@ -112,11 +141,11 @@ class UserRepository @Inject constructor(
             Log.d(TAG, "User already had the selected user blocked, doing nothing and returning null...")
             return null
         }
-        val newUser = user.copy(blockedUsers = user.blockedUsers + blockUserId)
+        val newBlocks = user.blockedUsers + blockUserId
         return firestore
             .collection(FirestoreConstants.USER_COLLECTION)
-            .document(newUser.uid)
-            .set(newUser)
+            .document(user.uid)
+            .update(FirestoreConstants.USER_BLOCKS, newBlocks)
     }
 
     /**
@@ -135,11 +164,11 @@ class UserRepository @Inject constructor(
         }
         return if(notBlockedUsers.isNotEmpty()) {
             //there are users who must be blocked
-            val newUser = user.copy(blockedUsers = user.blockedUsers + notBlockedUsers.toList())
+            val newBlocks = user.blockedUsers + notBlockedUsers.toList()
             return firestore
                 .collection(FirestoreConstants.USER_COLLECTION)
-                .document(newUser.uid)
-                .set(newUser)
+                .document(user.uid)
+                .update(FirestoreConstants.USER_BLOCKS, newBlocks)
         } else {
             Log.d(TAG, "All of the given users were already blocked, doing nothing...")
             null //no users present who are not blocked yet
@@ -157,11 +186,11 @@ class UserRepository @Inject constructor(
             Log.d(TAG, "User did not have the selected user blocked, doing nothing...")
             return null
         }
-        val newUser = user.copy(blockedUsers = user.blockedUsers - unblockUserId)
+        val newBlocks = user.blockedUsers - unblockUserId
         return firestore
             .collection(FirestoreConstants.USER_COLLECTION)
-            .document(newUser.uid)
-            .set(newUser)
+            .document(user.uid)
+            .update(FirestoreConstants.USER_BLOCKS, newBlocks)
     }
 
     /**
@@ -180,11 +209,11 @@ class UserRepository @Inject constructor(
         }
         //now for those actually blocked, unblock them
         return if(blockedUsers.isNotEmpty()) {
-            val newUser = user.copy(blockedUsers = user.blockedUsers - blockedUsers.toList())
+            val newBlocks = user.blockedUsers - blockedUsers.toList()
             firestore
                 .collection(FirestoreConstants.USER_COLLECTION)
-                .document(newUser.uid)
-                .set(newUser)
+                .document(user.uid)
+                .set(newBlocks)
         } else {
             //nobody needs to be unblocked
             Log.d(TAG, "None of the users were even blocked, doing nothing...")
@@ -224,11 +253,11 @@ class UserRepository @Inject constructor(
     fun addUserChatRoom(user: User, chatRoomUid: String): Task<Void>? {
         return if(!isUserInChatRoom(user, chatRoomUid)) {
             Log.d(TAG, "Adding new chat room to user ${user.displayName}...")
-            val updatedUser = user.copy(chatRooms = user.chatRooms + chatRoomUid)
+            val newChatRooms = user.chatRooms + chatRoomUid
             firestore
                 .collection(FirestoreConstants.USER_COLLECTION)
                 .document(user.uid)
-                .set(updatedUser)
+                .update(FirestoreConstants.USER_CHAT_ROOMS, newChatRooms)
         } else {
             Log.d(TAG, "${user.displayName} was already in chat room!")
             return null

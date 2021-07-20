@@ -39,7 +39,11 @@ data class User(
      * [User] uid-s of those users who have been blocked by this user.
      */
     @PropertyName(FirestoreConstants.USER_BLOCKS)
-    var blockedUsers: List<String> = listOf()
+    var blockedUsers: List<String> = listOf(),
 
-    //TODO: maybe image URL, other stuff
+    /**
+     * FCM message token of this user. Used to target the user (their device) with FCM messages.
+     */
+    @PropertyName(FirestoreConstants.USER_MESSAGE_TOKEN)
+    var messageToken: String = ""
 )

@@ -91,6 +91,8 @@ object FirestoreConstants {
 
     const val USER_BLOCKS = "blockedUsers"
 
+    const val USER_MESSAGE_TOKEN = "messageToken"
+
     // --------------------- CHAT ROOM collection. -----------------------------------
 
     const val CHAT_ROOM_COLLECTION = "chatRooms"
@@ -114,6 +116,8 @@ object FirestoreConstants {
     const val MESSAGE_TIME = "sendTime"
 
     const val MESSAGE_SENDER_UID = "senderUid"
+
+    const val MESSAGE_SENDER_NAME = "senderName"
 }
 
 /**

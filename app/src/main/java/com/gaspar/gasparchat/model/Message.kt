@@ -33,5 +33,11 @@ data class Message(
      * Uid of the [User] who sent the message
      */
     @PropertyName(FirestoreConstants.MESSAGE_SENDER_UID)
-    var senderUid: String = ""
+    var senderUid: String = "",
+
+    /**
+     * [User] display name of the sender.
+     */
+    @PropertyName(FirestoreConstants.MESSAGE_SENDER_NAME)
+    var senderName: String = ""
 )

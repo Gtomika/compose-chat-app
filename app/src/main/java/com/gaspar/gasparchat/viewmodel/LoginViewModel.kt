@@ -1,13 +1,15 @@
 package com.gaspar.gasparchat.viewmodel
 
-import android.app.Application
 import android.content.Context
 import androidx.compose.material.SnackbarDuration
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gaspar.gasparchat.*
+import com.gaspar.gasparchat.NavDest
+import com.gaspar.gasparchat.NavigationDispatcher
+import com.gaspar.gasparchat.R
+import com.gaspar.gasparchat.SnackbarDispatcher
 import com.gaspar.gasparchat.model.InputField
+import com.gaspar.gasparchat.model.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,7 +29,8 @@ class LoginViewModel @Inject constructor(
     private val navigationDispatcher: NavigationDispatcher,
     val snackbarDispatcher: SnackbarDispatcher,
     private val firebaseAuth: FirebaseAuth,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val userRepository: UserRepository
 ): ViewModel() {
 
     /**
@@ -114,6 +117,8 @@ class LoginViewModel @Inject constructor(
                 //loading is over
                 _loading.value = false
                 if(result.isSuccessful) {
+                    //update the newly logged in users message token to this devices message token
+                    userRepository.updateUserMessageToken(firebaseAuth.currentUser!!.uid)
                     //redirect to home
                     navigationDispatcher.dispatchNavigationCommand { navController ->
                         navController.popBackStack()

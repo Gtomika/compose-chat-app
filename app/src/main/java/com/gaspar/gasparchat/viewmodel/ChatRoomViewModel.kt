@@ -141,6 +141,14 @@ class ChatRoomViewModel @Inject constructor(
         if(displaying && event.chatRoomUid == chatRoom.value.chatUid) {
             Log.d(TAG, "Displayed Chat Room received new message, reloading...")
             reloadMessages(event.chatRoomUid)
+        } else {
+            //a new message arrived, but view model is not showing, or it is for another chat room: PUSH notification
+            buildNotification(
+                context = context,
+                title = event.title,
+                text = event.text,
+                chatRoomUid = event.chatRoomUid
+            )
         }
     }
 
@@ -227,10 +235,11 @@ class ChatRoomViewModel @Inject constructor(
                         val messagesTask = chatRoomRepository.getMessagesOfChatRoom(chatRoomUid)
                         messagesTask.addOnCompleteListener { messagesResult ->
                             if(messagesResult.isSuccessful && messagesResult.result != null) {
-                                Log.d(TAG, "Received Message objects that belong to this chat room!")
                                 //messages, users and chat room is downloaded
-                                _messages.value = messagesResult.result!!.toObjects(Message::class.java)
-                                Log.d(TAG, "${messages.value}")
+                                val queriedMessages = messagesResult.result!!.toObjects(Message::class.java)
+                                queriedMessages.sortBy { it.messageTime }
+                                _messages.value = queriedMessages
+                                Log.d(TAG, "Received Message objects that belong to this chat room, ${messages.value.size} in total.")
                                 //all good, this loading chain is done
                             } else {
                                 //failed to get message objects
@@ -248,7 +257,9 @@ class ChatRoomViewModel @Inject constructor(
         chatRoomRepository.getMessagesOfChatRoom(chatRoomUid).addOnCompleteListener { reloadResult ->
             if(reloadResult.isSuccessful && reloadResult.result != null) {
                 Log.d(TAG, "Reloaded messages in current displayed chat room!")
-                _messages.value = reloadResult.result!!.toObjects(Message::class.java)
+                val queriedMessages = reloadResult.result!!.toObjects(Message::class.java)
+                queriedMessages.sortBy { it.messageTime }
+                _messages.value = queriedMessages
             } else {
                 val message = context.getString(R.string.chat_load_fail)
                 showSnackbar(message)
@@ -439,7 +450,8 @@ class ChatRoomViewModel @Inject constructor(
         //create message object, UID and timestamp are auto generated
         val message = Message(
             messageText = typedMessage.value.input,
-            senderUid = localUser.value.uid
+            senderUid = localUser.value.uid,
+            senderName = localUser.value.displayName
         )
         //update messages instantly, assuming success
         _messages.value = messages.value + message
@@ -498,6 +510,9 @@ object LoadingFinishedEvent
 
 /**
  * Sent when this chat room gets a new message.
+ * @param chatRoomUid UID of the chat room which received message.
+ * @param title From the FCM message, a notification title.
+ * @param text From the FCM message, a notification text.
  */
 @Keep
-class MessageReceivedEvent(val chatRoomUid: String)
+class MessageReceivedEvent(val chatRoomUid: String, val title: String, val text: String)

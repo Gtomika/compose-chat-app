@@ -265,8 +265,7 @@ fun MessageContent(
                 )
                 //message surface
                 Surface(
-                    modifier = Modifier
-                        .wrapContentWidth(),
+                    modifier = Modifier.wrapContentWidth().align(Alignment.Start),
                     shape = RoundedCornerShape(size = 8.dp),
                     elevation = 5.dp,
                     color = Color.Gray,
@@ -330,7 +329,7 @@ fun LocalMessageContent(
                 )
                 //message surface
                 Surface(
-                    modifier = Modifier.wrapContentWidth(),
+                    modifier = Modifier.wrapContentWidth().align(Alignment.End),
                     shape = RoundedCornerShape(size = 8.dp),
                     elevation = 5.dp,
                     color = MaterialTheme.colors.primary,

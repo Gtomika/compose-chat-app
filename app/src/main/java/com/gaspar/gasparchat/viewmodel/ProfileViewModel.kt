@@ -154,20 +154,21 @@ class ProfileViewModel @Inject constructor(
             //check result
             if(result.isSuccessful) {
                 //updated in firebase auth, now update in database as well
-                userRepository.updateUserDisplayName(firebaseUser = firebaseAuth.currentUser!!).addOnCompleteListener { updateResult ->
-                    if(updateResult.isSuccessful) {
-                        //loading is over
-                        _loading.value = false
-                        val message = context.getString(R.string.profile_display_name_update_success)
-                        showSnackbar(message = message)
-                        //update actual string as well, that is watched by other composables
-                        _displayName.value = newDisplayName
-                    } else {
-                        //loading is over
-                        _loading.value = false
-                        val message = context.getString(R.string.profile_display_name_update_fail)
-                        showSnackbar(message = message)
-                    }
+                userRepository.updateUserDisplayName(firebaseAuth.currentUser!!.uid, firebaseAuth.currentUser!!.displayName!!)
+                    .addOnCompleteListener { updateResult ->
+                        if(updateResult.isSuccessful) {
+                            //loading is over
+                            _loading.value = false
+                            val message = context.getString(R.string.profile_display_name_update_success)
+                            showSnackbar(message = message)
+                            //update actual string as well, that is watched by other composables
+                            _displayName.value = newDisplayName
+                        } else {
+                            //loading is over
+                            _loading.value = false
+                            val message = context.getString(R.string.profile_display_name_update_fail)
+                            showSnackbar(message = message)
+                        }
                 }
 
             } else {

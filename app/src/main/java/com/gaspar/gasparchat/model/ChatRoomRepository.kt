@@ -30,7 +30,7 @@ class ChatRoomRepository @Inject constructor(
     }
 
     /**
-     * Finds all [Message] objects that are in a specific [ChatRoom].
+     * Finds all [Message] objects that are in a specific [ChatRoom]. Not ordered!
      * @param chatRoomUid The uid of the chat room.
      * @return Async [Task].
      */
@@ -39,6 +39,7 @@ class ChatRoomRepository @Inject constructor(
             .collection(FirestoreConstants.CHAT_ROOM_COLLECTION)
             .document(chatRoomUid)
             .collection(FirestoreConstants.CHAT_ROOM_MESSAGES)
+            //.orderBy(FirestoreConstants.MESSAGE_TIME) --> NOT working, will return empty list
             .get()
     }
 
