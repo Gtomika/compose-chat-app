@@ -3,6 +3,7 @@ package com.gaspar.gasparchat.viewmodel
 import android.content.Context
 import android.util.Log
 import androidx.annotation.Keep
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarResult
 import androidx.lifecycle.ViewModel
@@ -11,6 +12,7 @@ import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -88,6 +90,16 @@ class ChatRoomViewModel @Inject constructor(
      */
     private var loadingProcessAmount: Int = 0
 
+    /**
+     * Can be used to control the message lazy column.
+     */
+    var lazyColumnState: LazyListState? = null
+
+    /**
+     * Some operations require composable scope.
+     */
+    var composableCoroutineScope: CoroutineScope? = null
+
     init {
         EventBus.getDefault().register(this)
     }
@@ -132,6 +144,10 @@ class ChatRoomViewModel @Inject constructor(
             _title.value = getChatRoomTitle()
             //hide loading
             _loading.value = false
+            //scroll to the bottom (NEEDS composable scope)
+            composableCoroutineScope?.launch {
+                lazyColumnState?.animateScrollToItem(messages.value.size)
+            }
         }
     }
 
@@ -260,6 +276,10 @@ class ChatRoomViewModel @Inject constructor(
                 val queriedMessages = reloadResult.result!!.toObjects(Message::class.java)
                 queriedMessages.sortBy { it.messageTime }
                 _messages.value = queriedMessages
+                //scroll to the bottom (NEEDS composable scope)
+                composableCoroutineScope?.launch {
+                    lazyColumnState?.animateScrollToItem(messages.value.size)
+                }
             } else {
                 val message = context.getString(R.string.chat_load_fail)
                 showSnackbar(message)
@@ -465,6 +485,10 @@ class ChatRoomViewModel @Inject constructor(
                     showSnackbar(error)
                 }
             }
+        //scroll to the bottom (NEEDS composable scope)
+        composableCoroutineScope?.launch {
+            lazyColumnState?.animateScrollToItem(messages.value.size)
+        }
     }
 
     fun findDisplayNameForUid(userUid: String): String {

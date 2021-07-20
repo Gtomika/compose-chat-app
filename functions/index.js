@@ -42,7 +42,7 @@ exports.chatRoomNewMessage = functions
         //get a document reference to the parent, a Chat Room
         const chatRoomRef = db.collection('chatRooms').doc(chatRoomUid)
         //get this document asynchronously
-        chatRoomRef.get().then(chatRoomSnap => {
+        return chatRoomRef.get().then(chatRoomSnap => {
             //chat room object
             const chatRoom = chatRoomSnap.data()
             //get ref to each user and send them FCM message
@@ -52,7 +52,7 @@ exports.chatRoomNewMessage = functions
                     //2 users (one-to-one), only send message to the other
                     const otherUserUid = getOtherUserUid(chatRoom.chatRoomUsers, newMessage.senderUid)
 
-                    db.collection('users').doc(otherUserUid).get().then(userDoc => {
+                    return db.collection('users').doc(otherUserUid).get().then(userDoc => {
                         if(userDoc.exists) {
                             console.log('Other user queried, their display name is ' + userDoc.data().displayName + ', their token is ' + userDoc.data().messageToken)
 
@@ -63,19 +63,24 @@ exports.chatRoomNewMessage = functions
                                 newMessage.messageText //what was the message text
                             )
 
-                            admin.messaging().send(notification).then(response => { //response is a FCM message id, not used
+                            return admin.messaging().send(notification).then(response => { //response is a FCM message id, not used
                                 console.log('Other user received the message!')
+                                return true
                             })
                             .catch(error => {
                                 console.log('Failed to deliver FCM message: ' + error)
+                                return false
                             })
+                        } else {
+                            console.log('Failed to find chat partner in user collection! This is a database error.')
+                            return false
                         }
                     })
                 } else {
                     console.log('This message is in a Group chat, sending message to all other group members!')
                     //more then 2 users (GROUP): get all users except the one who sent the message
                     const otherUserUids = getOtherUserUids(chatRoom.chatRoomUsers, newMessage.senderUid)
-                    db.collection('users').where('uid', 'in', otherUserUids).get().then(usersSnapshot => {
+                    return db.collection('users').where('uid', 'in', otherUserUids).get().then(usersSnapshot => {
                         if(!usersSnapshot.empty) {
                             //get tokens of these other users
                             const otherUserTokens = []
@@ -92,9 +97,16 @@ exports.chatRoomNewMessage = functions
                                 newMessage.messageText //message text
                             )
 
-                            admin.messaging().sendMulticast(notification).then((response) => {
+                            return admin.messaging().sendMulticast(notification).then((response) => {
                                 console.log(response.successCount + ' messages were sent successfully!');
+                                return true
+                            }).catch(error => {
+                                console.log('Failed to deliver FCM messages to group members: ' + error)
+                                return false
                             });
+                        } else {
+                            console.log('Failed to find other group members in user collection! This is a database error.')
+                            return false
                         }
                     })
                 }

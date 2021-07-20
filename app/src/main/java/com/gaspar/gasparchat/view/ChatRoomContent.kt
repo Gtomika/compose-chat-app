@@ -5,7 +5,9 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,10 +17,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -32,10 +31,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.TAG
 import com.gaspar.gasparchat.model.Message
 import com.gaspar.gasparchat.viewmodel.ChatRoomViewModel
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -47,13 +48,19 @@ fun ChatRoomContent(viewModel: ChatRoomViewModel) {
     viewModel.displaying = true
 
     val scaffoldState = rememberScaffoldState()
+    val lazyColumnState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    viewModel.lazyColumnState = lazyColumnState
+    viewModel.composableCoroutineScope = coroutineScope
+
+
     Scaffold(
         scaffoldState = scaffoldState,
         topBar = { ChatRoomTopBar(viewModel) },
-        bottomBar = { SendMessageContent(viewModel) }
+        bottomBar = { SendMessageContent(viewModel, lazyColumnState) }
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
-            ChatRoomBody(viewModel = viewModel)
+            ChatRoomBody(viewModel = viewModel, lazyColumnState)
         }
     }
 }
@@ -136,7 +143,10 @@ fun ChatRoomTopBar(viewModel: ChatRoomViewModel) {
 @ExperimentalComposeUiApi
 @ExperimentalAnimationApi
 @Composable
-fun ChatRoomBody(viewModel: ChatRoomViewModel) {
+fun ChatRoomBody(
+    viewModel: ChatRoomViewModel,
+    lazyColumnState: LazyListState
+) {
     val blockedUsersPresent = viewModel.blockedMembersPresent.collectAsState()
     Column(modifier = Modifier.fillMaxSize()) {
         //top: block warning, if there is a block
@@ -149,7 +159,7 @@ fun ChatRoomBody(viewModel: ChatRoomViewModel) {
             ChatRoomBlockedWarning()
         }
         //middle: messages
-        MessagesContent(viewModel)
+        MessagesContent(viewModel, lazyColumnState)
     }
 }
 
@@ -174,11 +184,15 @@ fun ColumnScope.ChatRoomBlockedWarning() {
 }
 
 @Composable
-fun MessagesContent(viewModel: ChatRoomViewModel) {
+fun MessagesContent(
+    viewModel: ChatRoomViewModel,
+    lazyColumnState: LazyListState
+) {
     val messages = viewModel.messages.collectAsState()
     if(messages.value.isNotEmpty()) {
         //there are messages
         LazyColumn(
+            state = lazyColumnState,
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Bottom
         ) {
@@ -261,11 +275,15 @@ fun MessageContent(
                 Text(
                     text = senderDisplayName,
                     style = MaterialTheme.typography.overline,
-                    modifier = Modifier.align(Alignment.Start).padding(bottom = 2.dp)
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(bottom = 2.dp)
                 )
                 //message surface
                 Surface(
-                    modifier = Modifier.wrapContentWidth().align(Alignment.Start),
+                    modifier = Modifier
+                        .wrapContentWidth()
+                        .align(Alignment.Start),
                     shape = RoundedCornerShape(size = 8.dp),
                     elevation = 5.dp,
                     color = Color.Gray,
@@ -280,7 +298,9 @@ fun MessageContent(
                 Text(
                     text = formattedSendTime,
                     style = MaterialTheme.typography.overline,
-                    modifier = Modifier.align(Alignment.End).padding(top = 2.dp)
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(top = 2.dp)
                 )
             }
         }
@@ -325,11 +345,15 @@ fun LocalMessageContent(
                 Text(
                     text = senderDisplayName,
                     style = MaterialTheme.typography.overline,
-                    modifier = Modifier.align(Alignment.End).padding(bottom = 2.dp)
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(bottom = 2.dp)
                 )
                 //message surface
                 Surface(
-                    modifier = Modifier.wrapContentWidth().align(Alignment.End),
+                    modifier = Modifier
+                        .wrapContentWidth()
+                        .align(Alignment.End),
                     shape = RoundedCornerShape(size = 8.dp),
                     elevation = 5.dp,
                     color = MaterialTheme.colors.primary,
@@ -344,7 +368,9 @@ fun LocalMessageContent(
                 Text(
                     text = formattedSendTime,
                     style = MaterialTheme.typography.overline,
-                    modifier = Modifier.align(Alignment.Start).padding(top = 2.dp)
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(top = 2.dp)
                 )
             }
             //TODO can be replaced with profile picture
@@ -359,7 +385,10 @@ fun LocalMessageContent(
 
 @ExperimentalComposeUiApi
 @Composable
-fun SendMessageContent(viewModel: ChatRoomViewModel) {
+fun SendMessageContent(
+    viewModel: ChatRoomViewModel,
+    lazyColumnState: LazyListState
+) {
     val message = viewModel.typedMessage.collectAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
     Row(
@@ -388,7 +417,7 @@ fun SendMessageContent(viewModel: ChatRoomViewModel) {
             maxLines = 3
         )
         IconButton(
-            onClick = viewModel::onMessageSent,
+            onClick = { viewModel.onMessageSent() },
             enabled = message.value.input.isNotBlank() && !message.value.isError,
             modifier = Modifier
                 .padding(end = 16.dp, top = 8.dp, bottom = 8.dp)
