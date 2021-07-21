@@ -26,7 +26,7 @@ class ChatRoomViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val chatRoomRepository: ChatRoomRepository,
     private val userRepository: UserRepository,
-    private val snackbarDispatcher: SnackbarDispatcher,
+    val snackbarDispatcher: SnackbarDispatcher,
     private val navigationDispatcher: NavigationDispatcher
 ): ViewModel() {
 
@@ -134,7 +134,7 @@ class ChatRoomViewModel @Inject constructor(
             Log.d(TAG, "All loading processes finished, showing content...")
             //determine if block is present
             for(user in users.value) {
-                if(user.uid != localUser.value.uid && isBlockedBy(localUser.value, user)) {
+                if(user.uid != localUser.value.uid && isBlockedBy(localUser.value, user.uid)) {
                     //found somebody who is not the local user and is blocked by the local user.
                     _blockedMembersPresent.value = true
                     break
@@ -291,7 +291,7 @@ class ChatRoomViewModel @Inject constructor(
      * @return True only if there are exactly 2 participants.
      */
     fun isOneToOneChat(): Boolean {
-        return users.value.size == 2
+        return !chatRoom.value.group
     }
 
     fun onBackClicked() {
@@ -304,7 +304,7 @@ class ChatRoomViewModel @Inject constructor(
     }
 
     private fun getChatRoomTitle(): String {
-        return if(isOneToOneChat()) {
+        return if(isOneToOneChat() && users.value.size == 2) {
             //one-to-one conversation
             if(localUser.value.displayName == users.value[0].displayName) users.value[1].displayName else users.value[0].displayName
         } else {
@@ -352,29 +352,8 @@ class ChatRoomViewModel @Inject constructor(
                     _localUser.value = localUser.value.copy(blockedUsers = newBlockList.toList())
                     //update block status
                     _blockedMembersPresent.value = true
-                    //show snackbar
-                    val undoAction = {
-                        _loading.value = true
-                        //undo: unblock all those who were just blocked
-                        userRepository.removeUserBlocks(localUser.value, nonLocalUserIds)
-                            ?.addOnCompleteListener { undoResult ->
-                                _loading.value = false
-                                if(undoResult.isSuccessful) {
-                                    //update block status
-                                    _blockedMembersPresent.value = false
-                                    //update local user: shrink block list
-                                    _localUser.value = localUser.value.copy(blockedUsers = prevBlockList.toList())
-                                } else {
-                                    val undoMessage = context.getString(R.string.chat_operation_failed)
-                                    showSnackbar(undoMessage)
-                                }
-                            }
-                    }
-                    showSnackbar(
-                        message = context.getString(R.string.chat_block_success),
-                        actionLabel = context.getString(R.string.undo),
-                        onActionClicked = { undoAction.invoke() }
-                    )
+                    //recompose messages to hide the blocked user(s) messages
+                    _messages.value = messages.value.toList()
                 } else {
                     val message = context.getString(R.string.chat_operation_failed)
                     showSnackbar(message)
@@ -409,29 +388,8 @@ class ChatRoomViewModel @Inject constructor(
                     _localUser.value = localUser.value.copy(blockedUsers = newBlockList.toList())
                     //update block status
                     _blockedMembersPresent.value = false
-                    //show snackbar with undo option
-                    val undoAction = {
-                        _loading.value = true
-                        //undo: block all those who were just unblocked
-                        userRepository.addUserBlocks(localUser.value, nonLocalUserIds)
-                            ?.addOnCompleteListener { undoResult ->
-                                _loading.value = false
-                                if(undoResult.isSuccessful) {
-                                    //update block status
-                                    _blockedMembersPresent.value = true
-                                    //update local user: expand block list
-                                    _localUser.value = localUser.value.copy(blockedUsers = prevBlockList.toList())
-                                } else {
-                                    val undoMessage = context.getString(R.string.chat_operation_failed)
-                                    showSnackbar(undoMessage)
-                                }
-                            }
-                    }
-                    showSnackbar(
-                        message = context.getString(R.string.chat_block_success),
-                        actionLabel = context.getString(R.string.undo),
-                        onActionClicked = { undoAction.invoke() }
-                    )
+                    //recompose messages to show the unblocked user(s) messages
+                    _messages.value = messages.value.toList()
                 } else {
                     val message = context.getString(R.string.chat_operation_failed)
                     showSnackbar(message)
@@ -449,6 +407,28 @@ class ChatRoomViewModel @Inject constructor(
         val chatRomUid = chatRoomRepository.generateChatUid(userUid1 = localUser.value.uid, userUid2 = userUid)
         //send event to load new chat room
         EventBus.getDefault().post(ChatRoomChangedEvent(chatRomUid))
+    }
+
+    /**
+     * Called when the message at [position] has been deleted. This won't actually remove the message, just
+     * hide it's text and display a "deleted" message.
+     */
+    fun onMessageDeleted(position: Int) {
+        chatRoomRepository.deleteMessageFromChatRoom(
+            chatRoomUid = chatRoom.value.chatUid,
+            messageUid = messages.value[position].messageUid
+        ).addOnCompleteListener { deleteResult ->
+            if(deleteResult.isSuccessful) {
+                //update messages
+                val updatedMessages = mutableListOf<Message>()
+                updatedMessages.addAll(messages.value)
+                updatedMessages[position] = updatedMessages[position].copy(deleted = true)
+                _messages.value = updatedMessages.toList()
+            } else {
+                val message = context.getString(R.string.chat_message_delete_failed)
+                showSnackbar(message = message)
+            }
+        }
     }
 
     fun onTypedMessageChanged(newMessage: String) {

@@ -6,10 +6,8 @@ import android.util.Log
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarResult
 import androidx.compose.runtime.MutableState
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavDeepLinkRequest
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.ChatRoomRepository
 import com.gaspar.gasparchat.model.InputField
@@ -55,7 +53,7 @@ class SearchViewModel @Inject constructor(
     /**
      * The currently logged in user, or null if for some error the user could not be obtained.
      */
-    var user: User? = null
+    var localUser: User? = null
         private set
 
     //get the current user, to gain access to contacts and other info
@@ -64,7 +62,7 @@ class SearchViewModel @Inject constructor(
             if(userQueryResult.isSuccessful) {
                 if(userQueryResult.result != null) {
                     try {
-                        user = userQueryResult.result!!.toObjects(User::class.java)[0]
+                        localUser = userQueryResult.result!!.toObjects(User::class.java)[0]
                     } catch (e: Exception) {
                         Log.d(TAG, "Failed to query current user: exception, user possibly not present!")
                     }
@@ -135,6 +133,9 @@ class SearchViewModel @Inject constructor(
                         val allUsers = userQueryResult.result?.toObjects(User::class.java)
                         if(allUsers != null) {
                             for(user in allUsers) {
+                                if(user.uid == localUser?.uid) {
+                                    continue //don't add the current user to the results
+                                }
                                 //if the search string is in the name, save it
                                 if(user.displayName.contains(searchString, ignoreCase = true)) {
                                     matchingUsers.add(user)
@@ -172,7 +173,7 @@ class SearchViewModel @Inject constructor(
         val failMessage = application.getString(R.string.search_failed_to_start_chat)
         Log.d(TAG, "Search result of ${searchResults.value[position].displayName} was clicked!")
         //can generate the chatRoomUid from the user Uid-s
-        val chatRoomUid = chatRoomRepository.generateChatUid(user!!.uid, searchResults.value[position].uid)
+        val chatRoomUid = chatRoomRepository.generateChatUid(localUser!!.uid, searchResults.value[position].uid)
         //get chatroom see if it exists or not
         chatRoomRepository.getChatRoom(chatRoomUid).addOnCompleteListener { chatRoomResult ->
             if(chatRoomResult.isSuccessful && chatRoomResult.result != null) {
@@ -183,7 +184,7 @@ class SearchViewModel @Inject constructor(
                     navigateToChatRoom(chatRoomUid)
                 } else {
                     //the chat room between these 2 users doesn't exist yet: CREATE it
-                    chatRoomRepository.createOneToOneChatRoom(userUid1 = user!!.uid, userUid2 = searchResults.value[position].uid)
+                    chatRoomRepository.createOneToOneChatRoom(userUid1 = localUser!!.uid, userUid2 = searchResults.value[position].uid)
                         .addOnCompleteListener { chatRoomCreateResult ->
                             if(chatRoomCreateResult.isSuccessful) {
                                 //chat room now exists, can open chat
@@ -221,8 +222,8 @@ class SearchViewModel @Inject constructor(
     fun onAddAsContactClicked(position: Int, isContactState: MutableState<Boolean>) {
         //signal a contact list update
         EventBus.getDefault().post(ContactsChangedEvent)
-        Log.d(TAG, "{${user?.displayName}} added ${searchResults.value[position].displayName} as a contact!")
-        userRepository.addUserContact(user!!, searchResults.value[position].uid)
+        Log.d(TAG, "{${localUser?.displayName}} added ${searchResults.value[position].displayName} as a contact!")
+        userRepository.addUserContact(localUser!!, searchResults.value[position].uid)
             ?.addOnCompleteListener { result ->
                if(result.isSuccessful) {
                    //update the search result list to show the added user as a contact
@@ -241,8 +242,8 @@ class SearchViewModel @Inject constructor(
     fun onBlockUserClicked(position: Int, isBlockedState: MutableState<Boolean>) {
         //signal a block list update
         EventBus.getDefault().post(BlocklistChangedEvent)
-        Log.d(TAG, "{${user?.displayName}} blocked ${searchResults.value[position].displayName}!")
-        userRepository.addUserBlock(user!!, searchResults.value[position].uid)
+        Log.d(TAG, "{${localUser?.displayName}} blocked ${searchResults.value[position].displayName}!")
+        userRepository.addUserBlock(localUser!!, searchResults.value[position].uid)
             ?.addOnSuccessListener {
                 //update state so screen recomposes
                 isBlockedState.value = true
@@ -250,7 +251,7 @@ class SearchViewModel @Inject constructor(
                 val message = application.getString(R.string.search_block_successful, searchResults.value[position].displayName)
                 val actionLabel = application.getString(R.string.undo)
                 val onActionClicked = {
-                    userRepository.removeUserBlock(user!!, searchResults.value[position].uid)
+                    userRepository.removeUserBlock(localUser!!, searchResults.value[position].uid)
                         ?.addOnSuccessListener {
                             isBlockedState.value = false
                         }

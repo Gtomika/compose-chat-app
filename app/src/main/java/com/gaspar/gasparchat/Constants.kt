@@ -105,6 +105,8 @@ object FirestoreConstants {
 
     const val CHAT_ROOM_MESSAGES = "chatRoomMessages"
 
+    const val CHAT_ROOM_GROUP = "group"
+
     // --------------------- MESSAGE SUB-COLLECTION collection. -----------------------------------
 
     const val MESSAGE_COLLECTION = "messages"
@@ -118,6 +120,8 @@ object FirestoreConstants {
     const val MESSAGE_SENDER_UID = "senderUid"
 
     const val MESSAGE_SENDER_NAME = "senderName"
+
+    const val MESSAGE_DELETED = "deleted"
 }
 
 /**

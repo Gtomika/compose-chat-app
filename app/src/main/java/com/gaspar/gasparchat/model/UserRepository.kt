@@ -213,7 +213,7 @@ class UserRepository @Inject constructor(
             firestore
                 .collection(FirestoreConstants.USER_COLLECTION)
                 .document(user.uid)
-                .set(newBlocks)
+                .update(FirestoreConstants.USER_BLOCKS, newBlocks)
         } else {
             //nobody needs to be unblocked
             Log.d(TAG, "None of the users were even blocked, doing nothing...")
@@ -300,12 +300,12 @@ fun isContactOf(user: User, otherUser: User): Boolean {
 /**
  * Utility method to check if a user is blocked by another one.
  * @param user The block list of this user will be checked.
- * @param otherUser This user will be checked if they are blocked.
+ * @param otherUserUid This user will be checked if they are blocked.
  * @return True only if [otherUser] is blocked by [user].
  */
-fun isBlockedBy(user: User, otherUser: User): Boolean {
+fun isBlockedBy(user: User, otherUserUid: String): Boolean {
     for(blockedUid in user.blockedUsers) {
-        if(blockedUid == otherUser.uid) {
+        if(blockedUid == otherUserUid) {
             return true
         }
     }

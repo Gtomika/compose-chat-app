@@ -37,10 +37,10 @@
 
     <string name="home_title">Üdv, %1$s!</string>
     <string name="home_chats">Csevegések</string>
-    <string name="home_contacts">Kapcsolatok</string>
+    <string name="home_contacts">Barátok</string>
     <string name="home_blocked">Tiltások</string>
-    <string name="home_no_contacts">Nincsenek kapcsolataid.</string>
-    <string name="home_contacts_error">Hiba a kapcsolatok betöltésekor!</string>
+    <string name="home_no_contacts">Nem adtál hozzá barátokat.</string>
+    <string name="home_contacts_error">Hiba a barátok betöltésekor!</string>
     <string name="home_chats_error">Hiba a csevegések betöltése közben!</string>
     <string name="home_block_error">Hiba a tiltólista betöltésekor!</string>
     <string name="home_no_blocked">Nem tiltottál le senkit.</string>
@@ -82,9 +82,9 @@
     <string name="search_results_empty">Nincsenek keresési eredmények.</string>
     <string name="search_profile_image_description">%1$s profilképe</string>
     <string name="search_failed">Hiba a keresés közben!</string>
-    <string name="search_add_contact_description">Felvétel kapcsolatként</string>
-    <string name="search_added_as_contact">%1$s-t felvetted kapcsolatként!</string>
-    <string name="search_already_contact">Ismered őt!</string>
+    <string name="search_add_contact_description">Felvétel barátként</string>
+    <string name="search_added_as_contact">%1$s-t felvetted barátként!</string>
+    <string name="search_already_contact">Barát</string>
     <string name="search_blocked">Letiltottad!</string>
     <string name="search_block_successful">Letiltottad %1$s-t!</string>
     <string name="search_failed_to_start_chat">A beszélgetés indítása nem sikerült!</string>
@@ -106,5 +106,8 @@
     <string name="chat_send_message">Üzenet küldése</string>
     <string name="chat_profile_picture">Profilkép</string>
     <string name="chat_message_send_fail">Az üzenet elküldése nem sikerült!</string>
+    <string name="chat_message_deleted">[Törölt üzenet]</string>
+    <string name="chat_message_delete_failed">A törlés nem sikerült!</string>
+    <string name="chat_message_blocked">[Letiltott üzenet]</string>
 
 </resources>

@@ -52,7 +52,7 @@ fun SearchContent(viewModel: SearchViewModel) {
         }
     )
     //watch for snackbar
-    LaunchedEffect(key1 = viewModel, block = {
+    LaunchedEffect(key1 = 0, block = {
         launch {
             viewModel.snackbarDispatcher.snackbarEmitter.collect { snackbarCommand ->
                 snackbarCommand?.invoke(scaffoldState.snackbarHostState)
@@ -94,8 +94,8 @@ fun SearchBody(viewModel: SearchViewModel) {
             //there are results to be displayed
             LazyColumn {
                 itemsIndexed(searchResult.value) { position: Int, user: User ->
-                    val isContact = remember(user) { mutableStateOf(isContactOf(viewModel.user!!, user)) }
-                    val isBlocked = remember(user) { mutableStateOf(isBlockedBy(viewModel.user!!, user)) }
+                    val isContact = remember(user) { mutableStateOf(isContactOf(viewModel.localUser!!, user)) }
+                    val isBlocked = remember(user) { mutableStateOf(isBlockedBy(viewModel.localUser!!, user.uid)) }
                     SearchResultContent(
                         user = user,
                         position = position,

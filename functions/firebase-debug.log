@@ -1,0 +1,13 @@
+[debug] [2021-07-21T10:22:35.249Z] ----------------------------------------------------------------------
+[debug] [2021-07-21T10:22:35.252Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Gáspár Tamás\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only functions
+[debug] [2021-07-21T10:22:35.253Z] CLI Version:   9.16.0
+[debug] [2021-07-21T10:22:35.253Z] Platform:      win32
+[debug] [2021-07-21T10:22:35.253Z] Node Version:  v14.15.5
+[debug] [2021-07-21T10:22:35.254Z] Time:          Wed Jul 21 2021 12:22:35 GMT+0200 (közép-európai nyári idő)
+[debug] [2021-07-21T10:22:35.255Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2021-07-21T10:22:35.304Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2021-07-21T10:22:35.304Z] > authorizing via signed-in user (gaspar.tomi97@gmail.com)
+[debug] [2021-07-21T10:22:35.304Z] [iam] checking project gaspar-chat for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2021-07-21T10:22:35.306Z] >>> HTTP REQUEST POST https://cloudresourcemanager.googleapis.com/v1/projects/gaspar-chat:testIamPermissions  
+ {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}

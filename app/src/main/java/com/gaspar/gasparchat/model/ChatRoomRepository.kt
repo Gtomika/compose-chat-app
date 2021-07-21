@@ -53,7 +53,8 @@ class ChatRoomRepository @Inject constructor(
         val chatRoom = ChatRoom(
             chatUid = generateChatUid(userUidList),
             chatRoomName = chatRoomName,
-            chatRoomUsers = userUidList
+            chatRoomUsers = userUidList,
+            group = true
             //message sub collection is not created yet, only at first message
         )
         //add to firestore
@@ -74,7 +75,8 @@ class ChatRoomRepository @Inject constructor(
         val chatRoom = ChatRoom(
             chatUid = generateChatUid(userUid1, userUid2),
             chatRoomName =  "OneOnOnChat", //name is not important here
-            chatRoomUsers = listOf(userUid1, userUid2)
+            chatRoomUsers = listOf(userUid1, userUid2),
+            group = false
             //message sub collection is not created yet, only at first message
         )
         //add to firestore
@@ -101,9 +103,10 @@ class ChatRoomRepository @Inject constructor(
     }
 
     /**
-     * Removes a message from the selected chat rooms message sub collection.
-     * @param chatRoomUid Uid of the chat room to which the message will be removed from.
-     * @param messageUid Uid of the message to be removed.
+     * "Deletes" a message from the selected chat rooms message sub collection. The message will only get
+     * the deleted flag set to true, it won't actually be removed.
+     * @param chatRoomUid Uid of the chat room.
+     * @param messageUid Uid of the message to be deleted.
      * @return Async [Task] to subscribe to.
      */
     fun deleteMessageFromChatRoom(chatRoomUid: String, messageUid: String): Task<Void>{
@@ -112,7 +115,7 @@ class ChatRoomRepository @Inject constructor(
             .document(chatRoomUid)
             .collection(FirestoreConstants.CHAT_ROOM_MESSAGES)
             .document(messageUid)
-            .delete()
+            .update(FirestoreConstants.MESSAGE_DELETED, true)
     }
 
     /**
@@ -136,7 +139,7 @@ class ChatRoomRepository @Inject constructor(
      * @param userUidList List of [User] UIDs.
      * @return A UID string created from the user UIDs.
      */
-    fun generateChatUid(userUidList: List<String>): String {
+    private fun generateChatUid(userUidList: List<String>): String {
         val orderedUserUidList = userUidList.sorted()
         val chatRoomUid: String
         when {

@@ -2,7 +2,6 @@ package com.gaspar.gasparchat.model
 
 import com.gaspar.gasparchat.FirestoreConstants
 import com.google.firebase.firestore.PropertyName
-import com.google.firebase.firestore.ServerTimestamp
 import java.util.*
 
 /**
@@ -39,5 +38,12 @@ data class Message(
      * [User] display name of the sender.
      */
     @PropertyName(FirestoreConstants.MESSAGE_SENDER_NAME)
-    var senderName: String = ""
+    var senderName: String = "",
+
+    /**
+     * Flag that stores if the message was deleted. Deleted messages remain in the chat room,
+     * but don't show their text anymore.
+     */
+    @PropertyName(FirestoreConstants.MESSAGE_DELETED)
+    var deleted: Boolean = false
 )

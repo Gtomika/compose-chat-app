@@ -47,7 +47,7 @@ exports.chatRoomNewMessage = functions
             const chatRoom = chatRoomSnap.data()
             //get ref to each user and send them FCM message
             if(chatRoom.chatRoomUsers) {
-                if(chatRoom.chatRoomUsers.length == 2) {
+                if(!chatRoom.group) {
                     console.log('This message is in a One-to-One chat, sending FCM message to other user!')
                     //2 users (one-to-one), only send message to the other
                     const otherUserUid = getOtherUserUid(chatRoom.chatRoomUsers, newMessage.senderUid)
@@ -55,6 +55,12 @@ exports.chatRoomNewMessage = functions
                     return db.collection('users').doc(otherUserUid).get().then(userDoc => {
                         if(userDoc.exists) {
                             console.log('Other user queried, their display name is ' + userDoc.data().displayName + ', their token is ' + userDoc.data().messageToken)
+
+                            //dont send notification if the target blocked the message sender
+                            if(isBlockedBy(userDoc.data(), newMessage.senderUid)) {
+                                console.log('Other user has blocked the message sender, NOT sending notification!')
+                                return true
+                            }
 
                             const notification = buildNotificationForOneToOne(
                                 userDoc.data().messageToken, //who to send to
@@ -85,9 +91,12 @@ exports.chatRoomNewMessage = functions
                             //get tokens of these other users
                             const otherUserTokens = []
                             usersSnapshot.forEach( otherUserDoc => {
-                                otherUserTokens.push(otherUserDoc.data().messageToken)
+                                //dont send notification if the target blocked the message sender
+                                if(!isBlockedBy(otherUserDoc.data(), newMessage.senderUid)) {
+                                    otherUserTokens.push(otherUserDoc.data().messageToken)
+                                }
                             })
-                            console.log('Collected ' + (otherUserTokens.length) + ' other users who will receive FCM message!')
+                            console.log('Collected ' + (otherUserTokens.length) + ' other users who will receive FCM message (users who blocked the sender are not included)!')
 
                             //build and send notifications
                             const notification = buildNotificationForGroup(
@@ -131,6 +140,16 @@ exports.chatRoomNewMessage = functions
                 otherUserUids.push(userUid)
             }
         }
+    }
+
+    //check if user has otherUserUid blocked
+    function isBlockedBy(user, otherUserUid) {
+        for(blockedUserUid in user.blockedUsers) {
+            if(blockedUserUid === otherUserUid) {
+                return true
+            }
+        }
+        return false
     }
 
     //Returns the notification that is sent with FCM to a message token

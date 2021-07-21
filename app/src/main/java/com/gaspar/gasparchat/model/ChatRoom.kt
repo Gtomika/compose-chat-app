@@ -7,6 +7,9 @@ import com.google.firebase.firestore.PropertyName
  * A chat room is a set of users, usually 2, who can send each other messages. Each room has an id, name and
  * a list of [User] ids (the users in the chat), and a sub collection, which stores [Message]s that were
  * sent in this chat room.
+ * <p>
+ * Chat rooms can be private (one-to-one) or groups with more then 2 members. This is determined by the
+ * [group] flag.
  */
 data class ChatRoom(
 
@@ -28,7 +31,13 @@ data class ChatRoom(
      * List of [User] uid-s who are in this chat room.
      */
     @PropertyName(FirestoreConstants.CHAT_ROOM_USERS)
-    var chatRoomUsers: List<String> = listOf()
+    var chatRoomUsers: List<String> = listOf(),
+
+    /**
+     * This flag stores if the chat room is a group, or a one-to-one conversation.
+     */
+    @PropertyName(FirestoreConstants.CHAT_ROOM_GROUP)
+    var group: Boolean = false
 
     //MESSAGES sub collection is created when the first message is sent.
 )
