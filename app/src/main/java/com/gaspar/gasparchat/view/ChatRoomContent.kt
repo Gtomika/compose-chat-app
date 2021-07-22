@@ -21,7 +21,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -30,11 +29,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gaspar.gasparchat.R
+import com.gaspar.gasparchat.WatchForSnackbar
 import com.gaspar.gasparchat.model.Message
 import com.gaspar.gasparchat.model.isBlockedBy
 import com.gaspar.gasparchat.viewmodel.ChatRoomViewModel
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -62,13 +60,7 @@ fun ChatRoomContent(viewModel: ChatRoomViewModel) {
         }
     }
     //watch for snackbar
-    LaunchedEffect(key1 = 0, block = {
-        launch {
-            viewModel.snackbarDispatcher.snackbarEmitter.collect { snackbarCommand ->
-                snackbarCommand?.invoke(scaffoldState.snackbarHostState)
-            }
-        }
-    })
+    WatchForSnackbar(snackbarDispatcher = viewModel.snackbarDispatcher, snackbarHostState = scaffoldState.snackbarHostState)
 }
 
 @Composable
@@ -112,10 +104,6 @@ fun ChatRoomTopBar(viewModel: ChatRoomViewModel) {
                              }) {
                                  val chatMessage = stringResource(id = R.string.chat_initiate_with, formatArgs = arrayOf(user.displayName))
                                  Text(text = chatMessage)
-                                 Icon(
-                                     painter = painterResource(id = R.drawable.icon_chat),
-                                     contentDescription = chatMessage
-                                 )
                              }
                          }
                      }
@@ -128,17 +116,9 @@ fun ChatRoomTopBar(viewModel: ChatRoomViewModel) {
                     if(!showUnblock.value) { //display block icon
                         val blockText = stringResource(id = if(viewModel.isOneToOneChat()) R.string.chat_block else R.string.chat_group_block )
                         Text(text = blockText)
-                        Icon(
-                            painter = painterResource(id = R.drawable.icon_block),
-                            contentDescription = blockText
-                        )
                     } else { //display unblock icon
                         val unblockText = stringResource(id = if(viewModel.isOneToOneChat()) R.string.chat_unblock else R.string.chat_group_unblock )
                         Text(text = unblockText)
-                        Icon(
-                            painter = painterResource(id = R.drawable.icon_undo),
-                            contentDescription = unblockText
-                        )
                     }
                 }
             }

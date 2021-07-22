@@ -2,6 +2,8 @@ package com.gaspar.gasparchat.view
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -25,7 +27,11 @@ fun BlockedContent(viewModel: BlockedViewModel, ) {
     val loading = viewModel.loading.collectAsState()
     Box(modifier = Modifier.fillMaxSize()) {
         LoadingIndicator(loadingFlow = viewModel.loading)
-        AnimatedVisibility(visible = !loading.value) {
+        AnimatedVisibility(
+            visible = !loading.value,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
             BlockedBody(viewModel = viewModel)
         }
     }

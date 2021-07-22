@@ -39,13 +39,23 @@
     <string name="home_chats">Csevegések</string>
     <string name="home_contacts">Barátok</string>
     <string name="home_blocked">Tiltások</string>
-    <string name="home_no_contacts">Nem adtál hozzá barátokat.</string>
-    <string name="home_contacts_error">Hiba a barátok betöltésekor!</string>
+    <string name="home_no_friends">Nem adtál hozzá barátokat.</string>
+    <string name="home_friends_error">Hiba a barátok betöltésekor!</string>
     <string name="home_chats_error">Hiba a csevegések betöltése közben!</string>
     <string name="home_block_error">Hiba a tiltólista betöltésekor!</string>
     <string name="home_no_blocked">Nem tiltottál le senkit.</string>
     <string name="home_unblock_failed">Hiba a tiltás visszavonása közben.</string>
     <string name="home_unblock_success">Megszüntetted %1$s letiltását.</string>
+    <string name="home_groups">Csoportok</string>
+    <string name="home_groups_fail">Nem sikerült a csoportok betöltése!</string>
+    <string name="home_no_groups">Nem vagy benne egy csoportban sem.</string>
+
+    <string name="group_create">Létrehozás</string>
+    <string name="group_create_title">Csoport létrehozása</string>
+    <string name="group_create_success">A %1$s csoport létrejött!</string>
+    <string name="group_create_fail">Hiba a csoport létrehozása közben!</string>
+    <string name="group_add_friends">Vedd be a csoportba a barátaidat:</string>
+    <string name="group_create_name">Csoportnév</string>
 
     <string name="profile_title">Profil</string>
     <string name="profile_of">%1$s profilja</string>

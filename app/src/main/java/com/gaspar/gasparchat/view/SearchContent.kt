@@ -25,10 +25,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gaspar.gasparchat.R
+import com.gaspar.gasparchat.WatchForSnackbar
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.model.User
 import com.gaspar.gasparchat.model.isBlockedBy
-import com.gaspar.gasparchat.model.isContactOf
+import com.gaspar.gasparchat.model.isFriendOf
 import com.gaspar.gasparchat.viewmodel.SearchViewModel
 import com.gaspar.gasparchat.viewmodel.StringMethod
 import com.gaspar.gasparchat.viewmodel.VoidMethod
@@ -52,13 +53,7 @@ fun SearchContent(viewModel: SearchViewModel) {
         }
     )
     //watch for snackbar
-    LaunchedEffect(key1 = 0, block = {
-        launch {
-            viewModel.snackbarDispatcher.snackbarEmitter.collect { snackbarCommand ->
-                snackbarCommand?.invoke(scaffoldState.snackbarHostState)
-            }
-        }
-    })
+    WatchForSnackbar(snackbarDispatcher = viewModel.snackbarDispatcher, snackbarHostState = scaffoldState.snackbarHostState)
 }
 
 @Composable
@@ -94,7 +89,7 @@ fun SearchBody(viewModel: SearchViewModel) {
             //there are results to be displayed
             LazyColumn {
                 itemsIndexed(searchResult.value) { position: Int, user: User ->
-                    val isContact = remember(user) { mutableStateOf(isContactOf(viewModel.localUser!!, user)) }
+                    val isContact = remember(user) { mutableStateOf(isFriendOf(viewModel.localUser!!, user)) }
                     val isBlocked = remember(user) { mutableStateOf(isBlockedBy(viewModel.localUser!!, user.uid)) }
                     SearchResultContent(
                         user = user,

@@ -2,6 +2,8 @@ package com.gaspar.gasparchat.view
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,7 +15,6 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,44 +23,48 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.model.User
-import com.gaspar.gasparchat.viewmodel.ContactsViewModel
+import com.gaspar.gasparchat.viewmodel.FriendsViewModel
 
 @ExperimentalAnimationApi
 @Composable
-fun ContactsContent(viewModel: ContactsViewModel, ) {
+fun FriendsContent(viewModel: FriendsViewModel, ) {
     val loading = viewModel.loading.collectAsState()
     Box(modifier = Modifier.fillMaxSize()) {
         LoadingIndicator(loadingFlow = viewModel.loading)
-        AnimatedVisibility(visible = !loading.value) {
-            ContactsBody(viewModel = viewModel)
+        AnimatedVisibility(
+            visible = !loading.value,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            FriendsBody(viewModel = viewModel)
         }
     }
 }
 
 @Composable
-fun ContactsBody(viewModel: ContactsViewModel) {
+fun FriendsBody(viewModel: FriendsViewModel) {
     //depending on the amount of contacts
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        val contacts = viewModel.contacts.collectAsState()
+        val contacts = viewModel.friends.collectAsState()
         if(contacts.value.isNotEmpty()) {
             //there are contacts
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
                 itemsIndexed(contacts.value) { position, contactUser ->
-                    ContactCard(
+                    FriendCard(
                         position = position,
                         contactUser = contactUser,
-                        onContactClicked = viewModel::onContactClicked
+                        onContactClicked = viewModel::onFriendClicked
                     )
                 }
             }
         } else {
             //no contacts
             Text(
-                text = stringResource(id = R.string.home_no_contacts),
+                text = stringResource(id = R.string.home_no_friends),
                 modifier = Modifier
                     .padding(top = 50.dp)
                     .fillMaxWidth(),
@@ -71,7 +76,7 @@ fun ContactsBody(viewModel: ContactsViewModel) {
 }
 
 @Composable
-fun ContactCard(
+fun FriendCard(
     position: Int,
     contactUser: User,
     onContactClicked: (Int) -> Unit

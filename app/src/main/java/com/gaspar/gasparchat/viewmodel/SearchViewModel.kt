@@ -3,11 +3,8 @@ package com.gaspar.gasparchat.viewmodel
 import android.content.Context
 import android.os.CountDownTimer
 import android.util.Log
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarResult
 import androidx.compose.runtime.MutableState
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.ChatRoomRepository
 import com.gaspar.gasparchat.model.InputField
@@ -17,7 +14,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import org.greenrobot.eventbus.EventBus
 import javax.inject.Inject
 
@@ -156,8 +152,8 @@ class SearchViewModel @Inject constructor(
                 } else {
                     _loading.value = false
                     //the search failed
-                    val message = application.getString(R.string.search_failed)
-                    showSnackbar(message)
+                    snackbarDispatcher.createOnlyMessageSnackbar(application.getString(R.string.search_failed))
+                    snackbarDispatcher.showSnackbar()
                 }
             }
         }
@@ -193,14 +189,16 @@ class SearchViewModel @Inject constructor(
                             } else {
                                 //failed to create chat room
                                 _loading.value = false
-                                showSnackbar(failMessage)
+                                snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
+                                snackbarDispatcher.showSnackbar()
                             }
                         }
                 }
             } else {
                 //failed to query chat room
                 _loading.value = false
-                showSnackbar(failMessage)
+                snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
+                snackbarDispatcher.showSnackbar()
             }
         }
     }
@@ -221,9 +219,9 @@ class SearchViewModel @Inject constructor(
      */
     fun onAddAsContactClicked(position: Int, isContactState: MutableState<Boolean>) {
         //signal a contact list update
-        EventBus.getDefault().post(ContactsChangedEvent)
+        EventBus.getDefault().post(FriendsChangedEvent)
         Log.d(TAG, "{${localUser?.displayName}} added ${searchResults.value[position].displayName} as a contact!")
-        userRepository.addUserContact(localUser!!, searchResults.value[position].uid)
+        userRepository.addUserFriend(localUser!!, searchResults.value[position].uid)
             ?.addOnCompleteListener { result ->
                if(result.isSuccessful) {
                    //update the search result list to show the added user as a contact
@@ -231,7 +229,8 @@ class SearchViewModel @Inject constructor(
                    //show snackbar
                    val message = application.getString(R.string.search_added_as_contact,
                        searchResults.value[position].displayName)
-                   showSnackbar(message)
+                   snackbarDispatcher.createOnlyMessageSnackbar(message = message)
+                   snackbarDispatcher.showSnackbar()
                }
             }
     }
@@ -248,45 +247,17 @@ class SearchViewModel @Inject constructor(
                 //update state so screen recomposes
                 isBlockedState.value = true
                 //show snackbar
-                val message = application.getString(R.string.search_block_successful, searchResults.value[position].displayName)
-                val actionLabel = application.getString(R.string.undo)
+                snackbarDispatcher.setSnackbarMessage(application.getString(R.string.search_block_successful,
+                    searchResults.value[position].displayName))
+                snackbarDispatcher.setSnackbarLabel(application.getString(R.string.undo))
                 val onActionClicked = {
                     userRepository.removeUserBlock(localUser!!, searchResults.value[position].uid)
                         ?.addOnSuccessListener {
                             isBlockedState.value = false
                         }
                 }
-                showSnackbar(
-                    message = message,
-                    actionLabel = actionLabel,
-                    duration = SnackbarDuration.Long,
-                    onActionClicked =  { onActionClicked.invoke() }
-                )
+                snackbarDispatcher.setSnackbarAction { onActionClicked.invoke() }
+                snackbarDispatcher.showSnackbar()
             }
-    }
-
-    /**
-     * Quick way to show a snackbar.
-     * @param message Message to show.
-     */
-    private fun showSnackbar(
-        message: String,
-        duration: SnackbarDuration = SnackbarDuration.Short,
-        actionLabel: String? = null,
-        onActionClicked: VoidMethod = {}
-    ) {
-        snackbarDispatcher.dispatchSnackbarCommand { snackbarHostState ->
-            viewModelScope.launch {
-                val result = snackbarHostState.showSnackbar(
-                    message = message,
-                    actionLabel = actionLabel,
-                    duration = duration
-                )
-                when(result) {
-                    SnackbarResult.ActionPerformed -> onActionClicked.invoke()
-                    SnackbarResult.Dismissed -> { }
-                }
-            }
-        }
     }
 }

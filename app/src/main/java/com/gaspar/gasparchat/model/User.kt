@@ -29,11 +29,10 @@ data class User(
     var chatRooms: List<String> = listOf(),
 
     /**
-     * Contacts ([User] uid-s) of this user. Everyone who this user ever chatted with/been in a common group is a contact.
-     * Moreover, the user can manually add contacts from the search screen.
+     * Friends ([User] uid-s) of this user.
      */
-    @PropertyName(FirestoreConstants.USER_CONTACTS)
-    var contacts: List<String> = listOf(),
+    @PropertyName(FirestoreConstants.USER_FRIENDS)
+    var friends: List<String> = listOf(),
 
     /**
      * [User] uid-s of those users who have been blocked by this user.

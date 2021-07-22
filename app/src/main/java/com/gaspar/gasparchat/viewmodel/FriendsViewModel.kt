@@ -1,14 +1,8 @@
 package com.gaspar.gasparchat.viewmodel
 
-import android.app.Application
 import android.content.Context
-import android.util.EventLog
 import android.util.Log
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarResult
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.ChatRoomRepository
 import com.gaspar.gasparchat.model.User
@@ -17,14 +11,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import javax.inject.Inject
 
 @HiltViewModel
-class ContactsViewModel @Inject constructor(
+class FriendsViewModel @Inject constructor(
     val snackbarDispatcher: SnackbarDispatcher,
     private val navigationDispatcher: NavigationDispatcher,
     private val userRepository: UserRepository,
@@ -38,15 +31,15 @@ class ContactsViewModel @Inject constructor(
     /**
      * The current users contact list.
      */
-    private val _contacts = MutableStateFlow(listOf<User>())
-    val contacts: StateFlow<List<User>> = _contacts
+    private val _friends = MutableStateFlow(listOf<User>())
+    val friends: StateFlow<List<User>> = _friends
 
     private val _currentUser = MutableStateFlow(User())
     val currentUser: StateFlow<User> = _currentUser
 
     init {
         EventBus.getDefault().register(this)
-        getCurrentUserAndContacts()
+        getCurrentUserAndFriends()
     }
 
     override fun onCleared() {
@@ -55,46 +48,46 @@ class ContactsViewModel @Inject constructor(
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onContactListUpdatedEvent(event: ContactsChangedEvent) {
+    fun onFriendListUpdatedEvent(event: FriendsChangedEvent) {
         //refresh contents
-        getCurrentUserAndContacts()
+        getCurrentUserAndFriends()
     }
 
-    private fun getCurrentUserAndContacts() {
+    private fun getCurrentUserAndFriends() {
         _loading.value = true
         userRepository.getCurrentUser().addOnCompleteListener { currentUserResult ->
             if(currentUserResult.isSuccessful) {
                 _currentUser.value = currentUserResult.result!!.toObjects(User::class.java)[0]
                 //get contact users
-                if(currentUser.value.contacts.isNotEmpty()) {
-                    userRepository.getUsersByUid(currentUser.value.contacts).addOnCompleteListener { contactsQueryResult ->
+                if(currentUser.value.friends.isNotEmpty()) {
+                    userRepository.getUsersByUid(currentUser.value.friends).addOnCompleteListener { contactsQueryResult ->
                         _loading.value = false
                         if(contactsQueryResult.isSuccessful && contactsQueryResult.result != null) {
-                            _contacts.value = contactsQueryResult.result!!.toObjects(User::class.java)
+                            _friends.value = contactsQueryResult.result!!.toObjects(User::class.java)
                         } else {
                             //failed to get contacts
-                            showContactsErrorSnackbar()
+                            showFriendsErrorSnackbar()
                         }
                     }
                 } else {
                     //no contacts
                     _loading.value = false
-                    _contacts.value = listOf()
+                    _friends.value = listOf()
                 }
             } else {
                 _loading.value = false
                 //failed to get current user
-                showContactsErrorSnackbar()
+                showFriendsErrorSnackbar()
             }
         }
     }
 
-    fun onContactClicked(position: Int) {
+    fun onFriendClicked(position: Int) {
         _loading.value = true
         val failMessage = context.getString(R.string.search_failed_to_start_chat)
-        Log.d(TAG, "Contact ${contacts.value[position].displayName} was clicked!")
+        Log.d(TAG, "Contact ${friends.value[position].displayName} was clicked!")
         //can generate the chatRoomUid from the user Uid-s
-        val chatRoomUid = chatRoomRepository.generateChatUid(currentUser.value.uid, contacts.value[position].uid)
+        val chatRoomUid = chatRoomRepository.generateChatUid(currentUser.value.uid, friends.value[position].uid)
         //get chatroom see if it exists or not
         chatRoomRepository.getChatRoom(chatRoomUid).addOnCompleteListener { chatRoomResult ->
             if(chatRoomResult.isSuccessful && chatRoomResult.result != null) {
@@ -105,7 +98,7 @@ class ContactsViewModel @Inject constructor(
                     navigateToChatRoom(chatRoomUid)
                 } else {
                     //the chat room between these 2 users doesn't exist yet: CREATE it
-                    chatRoomRepository.createOneToOneChatRoom(userUid1 = currentUser.value.uid, userUid2 = contacts.value[position].uid)
+                    chatRoomRepository.createOneToOneChatRoom(userUid1 = currentUser.value.uid, userUid2 = friends.value[position].uid)
                         .addOnCompleteListener { chatRoomCreateResult ->
                             if(chatRoomCreateResult.isSuccessful) {
                                 //chat room now exists, can open chat
@@ -114,14 +107,16 @@ class ContactsViewModel @Inject constructor(
                             } else {
                                 //failed to create chat room
                                 _loading.value = false
-                                showSnackbar(failMessage)
+                                snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
+                                snackbarDispatcher.showSnackbar()
                             }
                         }
                 }
             } else {
                 //failed to query chat room
                 _loading.value = false
-                showSnackbar(failMessage)
+                snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
+                snackbarDispatcher.showSnackbar()
             }
         }
     }
@@ -137,40 +132,10 @@ class ContactsViewModel @Inject constructor(
         }
     }
 
-    private fun showContactsErrorSnackbar() {
-        val message = context.getString(R.string.home_contacts_error)
-        val actionLabel = context.getString(R.string.retry)
-        val onActionClicked = { getCurrentUserAndContacts() } //retry action
-        showSnackbar(
-            message = message,
-            actionLabel = actionLabel,
-            duration = SnackbarDuration.Long,
-            onActionClicked = onActionClicked,
-        )
-    }
-
-    /**
-     * Quick way to show a snackbar.
-     * @param message Message to show.
-     */
-    private fun showSnackbar(
-        message: String,
-        duration: SnackbarDuration = SnackbarDuration.Short,
-        actionLabel: String? = null,
-        onActionClicked: VoidMethod = {}
-    ) {
-        snackbarDispatcher.dispatchSnackbarCommand { snackbarHostState ->
-            viewModelScope.launch {
-                val result = snackbarHostState.showSnackbar(
-                    message = message,
-                    actionLabel = actionLabel,
-                    duration = duration
-                )
-                when(result) {
-                    SnackbarResult.ActionPerformed -> onActionClicked.invoke()
-                    SnackbarResult.Dismissed -> { }
-                }
-            }
-        }
+    private fun showFriendsErrorSnackbar() {
+        snackbarDispatcher.setSnackbarMessage(context.getString(R.string.home_friends_error))
+        snackbarDispatcher.setSnackbarLabel(context.getString(R.string.retry))
+        snackbarDispatcher.setSnackbarAction { getCurrentUserAndFriends() } //retry action
+        snackbarDispatcher.showSnackbar()
     }
 }

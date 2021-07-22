@@ -4,10 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.annotation.Keep
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarResult
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -181,7 +178,8 @@ class ChatRoomViewModel @Inject constructor(
                 //this task cannot go on
                 EventBus.getDefault().post(LoadingFinishedEvent)
                 val failMessage = context.getString(R.string.chat_load_fail)
-                showSnackbar(failMessage)
+                snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
+                snackbarDispatcher.showSnackbar()
             }
         }.continueWith { previousTask ->
             //add chat room if needed
@@ -194,7 +192,8 @@ class ChatRoomViewModel @Inject constructor(
                         EventBus.getDefault().post(LoadingFinishedEvent)
                         if(!addGroupResult.isSuccessful) {
                             val failMessage = context.getString(R.string.chat_load_fail)
-                            showSnackbar(failMessage)
+                            snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
+                            snackbarDispatcher.showSnackbar()
                         }
                     }
                 } else {
@@ -222,7 +221,8 @@ class ChatRoomViewModel @Inject constructor(
             } else {
                 EventBus.getDefault().post(LoadingFinishedEvent)
                 //failed to get chat room, can't continue
-                showSnackbar(failMessage)
+                snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
+                snackbarDispatcher.showSnackbar()
             }
         }
         //continue with getting the users
@@ -240,7 +240,8 @@ class ChatRoomViewModel @Inject constructor(
                     } else {
                         //failed, cannot continue
                         EventBus.getDefault().post(LoadingFinishedEvent)
-                        showSnackbar(failMessage)
+                        snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
+                        snackbarDispatcher.showSnackbar()
                     }
                 }
                 //continue with getting the messages
@@ -259,7 +260,8 @@ class ChatRoomViewModel @Inject constructor(
                                 //all good, this loading chain is done
                             } else {
                                 //failed to get message objects
-                                showSnackbar(failMessage)
+                                snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
+                                snackbarDispatcher.showSnackbar()
                             }
                             EventBus.getDefault().post(LoadingFinishedEvent)
                         }
@@ -282,7 +284,8 @@ class ChatRoomViewModel @Inject constructor(
                 }
             } else {
                 val message = context.getString(R.string.chat_load_fail)
-                showSnackbar(message)
+                snackbarDispatcher.createOnlyMessageSnackbar(message)
+                snackbarDispatcher.showSnackbar()
             }
         }
     }
@@ -356,7 +359,8 @@ class ChatRoomViewModel @Inject constructor(
                     _messages.value = messages.value.toList()
                 } else {
                     val message = context.getString(R.string.chat_operation_failed)
-                    showSnackbar(message)
+                    snackbarDispatcher.createOnlyMessageSnackbar(message)
+                    snackbarDispatcher.showSnackbar()
                 }
             }
     }
@@ -392,7 +396,8 @@ class ChatRoomViewModel @Inject constructor(
                     _messages.value = messages.value.toList()
                 } else {
                     val message = context.getString(R.string.chat_operation_failed)
-                    showSnackbar(message)
+                    snackbarDispatcher.createOnlyMessageSnackbar(message)
+                    snackbarDispatcher.showSnackbar()
                 }
             }
     }
@@ -426,7 +431,8 @@ class ChatRoomViewModel @Inject constructor(
                 _messages.value = updatedMessages.toList()
             } else {
                 val message = context.getString(R.string.chat_message_delete_failed)
-                showSnackbar(message = message)
+                snackbarDispatcher.createOnlyMessageSnackbar(message)
+                snackbarDispatcher.showSnackbar()
             }
         }
     }
@@ -459,10 +465,11 @@ class ChatRoomViewModel @Inject constructor(
         _typedMessage.value = typedMessage.value.copy(input = "", isError = false)
         //start async task that sends message to firestore
         chatRoomRepository.addMessageToChatRoom(chatRoomUid = chatRoom.value.chatUid, message = message)
-            .addOnCompleteListener { messageResult ->
+            ?.addOnCompleteListener { messageResult ->
                 if(!messageResult.isSuccessful) {
                     val error = context.getString(R.string.chat_message_send_fail)
-                    showSnackbar(error)
+                    snackbarDispatcher.createOnlyMessageSnackbar(error)
+                    snackbarDispatcher.showSnackbar()
                 }
             }
         //scroll to the bottom (NEEDS composable scope)
@@ -478,31 +485,6 @@ class ChatRoomViewModel @Inject constructor(
             }
         }
         return "Unknown"
-    }
-
-    /**
-     * Quick way to show a snackbar.
-     * @param message Message to show.
-     */
-    private fun showSnackbar(
-        message: String,
-        duration: SnackbarDuration = SnackbarDuration.Short,
-        actionLabel: String? = null,
-        onActionClicked: VoidMethod = {}
-    ) {
-        snackbarDispatcher.dispatchSnackbarCommand { snackbarHostState ->
-            viewModelScope.launch {
-                val result = snackbarHostState.showSnackbar(
-                    message = message,
-                    actionLabel = actionLabel,
-                    duration = duration
-                )
-                when(result) {
-                    SnackbarResult.ActionPerformed -> onActionClicked.invoke()
-                    SnackbarResult.Dismissed -> { }
-                }
-            }
-        }
     }
 }
 

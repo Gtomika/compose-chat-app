@@ -1,9 +1,7 @@
 package com.gaspar.gasparchat.viewmodel
 
 import android.content.Context
-import androidx.compose.material.SnackbarDuration
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.NavDest
 import com.gaspar.gasparchat.NavigationDispatcher
 import com.gaspar.gasparchat.R
@@ -15,7 +13,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -98,7 +95,8 @@ class LoginViewModel @Inject constructor(
         //check for existing errors
         if(loginFailed || emptyRequiredInputsPresent()) {
             val message = context.getString(R.string.login_invalid_data)
-            showSnackbar(message)
+            snackbarDispatcher.createOnlyMessageSnackbar(message)
+            snackbarDispatcher.showSnackbar()
             return
         }
         //no errors, call firebase
@@ -131,7 +129,8 @@ class LoginViewModel @Inject constructor(
                     _email.value = this.email.value.copy(isError = true, errorMessage = labelMessage)
                     _password.value = this.password.value.copy(isError = true, errorMessage = labelMessage)
                     val message = context.getString(R.string.login_fail)
-                    showSnackbar(message = message)
+                    snackbarDispatcher.createOnlyMessageSnackbar(message)
+                    snackbarDispatcher.showSnackbar()
                 }
             }
     }
@@ -143,22 +142,6 @@ class LoginViewModel @Inject constructor(
         navigationDispatcher.dispatchNavigationCommand { navController ->
             navController.popBackStack()
             navController.navigate(NavDest.REGISTER)
-        }
-    }
-
-    /**
-     * Quick way to show a snackbar.
-     * @param message Message to show.
-     */
-    private fun showSnackbar(message: String) {
-        snackbarDispatcher.dispatchSnackbarCommand { snackbarHostState ->
-            viewModelScope.launch {
-                snackbarHostState.showSnackbar(
-                    message = message,
-                    actionLabel = null,
-                    duration = SnackbarDuration.Short
-                )
-            }
         }
     }
 }

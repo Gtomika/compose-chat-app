@@ -3,11 +3,15 @@ package com.gaspar.gasparchat.view
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
@@ -20,17 +24,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.gaspar.gasparchat.NavDest
 import com.gaspar.gasparchat.R
+import com.gaspar.gasparchat.WatchForSnackbar
 import com.gaspar.gasparchat.model.HomeNavigationItem
-import com.gaspar.gasparchat.viewmodel.BlockedViewModel
-import com.gaspar.gasparchat.viewmodel.ChatsViewModel
-import com.gaspar.gasparchat.viewmodel.ContactsViewModel
-import com.gaspar.gasparchat.viewmodel.HomeViewModel
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
+import com.gaspar.gasparchat.viewmodel.*
 
 /**
  * Contents of the home screen.
  */
+@ExperimentalComposeUiApi
 @ExperimentalAnimationApi
 @Composable
 fun HomeContent(viewModel: HomeViewModel = hiltViewModel()) {
@@ -52,41 +53,38 @@ fun HomeContent(viewModel: HomeViewModel = hiltViewModel()) {
                 displayName = firebaseUser.displayName!!
             )
         },
-        content = {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                //loading indicator is always on top
-                LoadingIndicator(loadingFlow = viewModel.loading)
-                //actual content is a navigation host
-                NavHost(
-                    navController = navController,
-                    startDestination = NavDest.HOME_CHATS,
-                    modifier = Modifier.alpha(if(loading.value) 0.5f else 1f)
-                ) {
-                    composable(route = NavDest.HOME_CHATS) {
-                        val chatsViewModel = hiltViewModel<ChatsViewModel>()
-                        ChatsContent(viewModel = chatsViewModel)
-                    }
-                    composable(route = NavDest.HOME_CONTACTS) {
-                        val contactViewModel = hiltViewModel<ContactsViewModel>()
-                        ContactsContent(viewModel = contactViewModel)
-                    }
-                    composable(route = NavDest.HOME_BLOCKED) {
-                        val blockedViewModel = hiltViewModel<BlockedViewModel>()
-                        BlockedContent(viewModel = blockedViewModel)
-                    }
+        bottomBar = { HomeBottomNavigationBar(navController) }
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxWidth().padding(paddingValues)) {
+            //loading indicator is always on top
+            LoadingIndicator(loadingFlow = viewModel.loading)
+            //actual content is a navigation host
+            NavHost(
+                navController = navController,
+                startDestination = NavDest.HOME_CHATS,
+                modifier = Modifier.alpha(if(loading.value) 0.5f else 1f)
+            ) {
+                composable(route = NavDest.HOME_CHATS) {
+                    val chatsViewModel = hiltViewModel<ChatsViewModel>()
+                    ChatsContent(viewModel = chatsViewModel)
+                }
+                composable(route = NavDest.HOME_FRIENDS) {
+                    val contactViewModel = hiltViewModel<FriendsViewModel>()
+                    FriendsContent(viewModel = contactViewModel)
+                }
+                composable(route = NavDest.HOME_GROUPS) {
+                    val groupsViewModel = hiltViewModel<GroupsViewModel>()
+                    GroupsContent(groupsViewModel, paddingValues)
+                }
+                composable(route = NavDest.HOME_BLOCKED) {
+                    val blockedViewModel = hiltViewModel<BlockedViewModel>()
+                    BlockedContent(viewModel = blockedViewModel)
                 }
             }
-        },
-        bottomBar = { HomeBottomNavigationBar(navController) }
-    )
-    //watch for snackbar
-    LaunchedEffect(key1 = viewModel, block = {
-        launch {
-            viewModel.snackbarDispatcher.snackbarEmitter.collect { snackbarCommand ->
-                snackbarCommand?.invoke(scaffoldState.snackbarHostState)
-            }
         }
-    })
+    }
+    //watch for snackbar
+    WatchForSnackbar(snackbarDispatcher = viewModel.snackbarDispatcher, snackbarHostState = scaffoldState.snackbarHostState)
 }
 
 @Composable
@@ -129,7 +127,8 @@ fun HomeBottomNavigationBar(
 ) {
     val navItems = listOf(
         HomeNavigationItem.Chats,
-        HomeNavigationItem.Contacts,
+        HomeNavigationItem.Friends,
+        HomeNavigationItem.Groups,
         HomeNavigationItem.Blocked
     )
 

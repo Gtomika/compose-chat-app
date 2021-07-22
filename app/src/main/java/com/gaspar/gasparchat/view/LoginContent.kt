@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.gaspar.gasparchat.R
+import com.gaspar.gasparchat.WatchForSnackbar
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.viewmodel.LoginViewModel
 import kotlinx.coroutines.flow.StateFlow
@@ -49,13 +50,7 @@ fun LoginContent(
         }
     )
     //watch for snackbar
-    LaunchedEffect(key1 = viewModel, block = {
-        launch {
-            viewModel.snackbarDispatcher.snackbarEmitter.collect { snackbarCommand ->
-                snackbarCommand?.invoke(scaffoldState.snackbarHostState)
-            }
-        }
-    })
+    WatchForSnackbar(snackbarDispatcher = viewModel.snackbarDispatcher, snackbarHostState = scaffoldState.snackbarHostState)
 }
 
 @ExperimentalComposeUiApi

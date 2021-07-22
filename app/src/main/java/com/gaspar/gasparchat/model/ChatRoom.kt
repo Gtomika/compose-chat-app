@@ -2,6 +2,7 @@ package com.gaspar.gasparchat.model
 
 import com.gaspar.gasparchat.FirestoreConstants
 import com.google.firebase.firestore.PropertyName
+import java.util.*
 
 /**
  * A chat room is a set of users, usually 2, who can send each other messages. Each room has an id, name and
@@ -37,7 +38,28 @@ data class ChatRoom(
      * This flag stores if the chat room is a group, or a one-to-one conversation.
      */
     @PropertyName(FirestoreConstants.CHAT_ROOM_GROUP)
-    var group: Boolean = false
+    var group: Boolean = false,
+
+    /**
+     * UID of the [User] that is the admin of the group, or null in case of one-to-one conversations,
+     * as those have no admin. Only use this value if [group] is true.
+     */
+    @PropertyName(FirestoreConstants.CHAT_ROOM_ADMIN)
+    var admin: String? = null,
+
+    /**
+     * The [Date] of the last message, or null if no message was ever sent. This is user to order groups
+     * based on activity.
+     */
+    @PropertyName(FirestoreConstants.CHAT_ROOM_LAST_MESSAGE_TIME)
+    var lastMessageTime: Date? = null,
+
+    /**
+     * The text of the last message, or null if there was no message sent. This is used to show a preview
+     * of the chat rooms content.
+     */
+    @PropertyName(FirestoreConstants.CHAT_ROOM_LAST_MESSAGE_TEXT)
+    var lastMessageText: String? = null
 
     //MESSAGES sub collection is created when the first message is sent.
 )

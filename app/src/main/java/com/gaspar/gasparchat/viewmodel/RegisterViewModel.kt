@@ -1,12 +1,8 @@
 package com.gaspar.gasparchat.viewmodel
 
-import android.app.Application
 import android.content.Context
 import android.util.Log
-import androidx.compose.material.SnackbarDuration
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.model.UserRepository
@@ -19,7 +15,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -137,7 +132,8 @@ class RegisterViewModel @Inject constructor(
         //check if any of the fields is empty but does not have error: this is the initial state
         if(emptyRequiredInputsPresent()) {
             val message = context.getString(R.string.login_invalid_data)
-            showSnackbar(message = message)
+            snackbarDispatcher.createOnlyMessageSnackbar(message)
+            snackbarDispatcher.showSnackbar()
             return
         }
         //password conditions: match
@@ -200,16 +196,19 @@ class RegisterViewModel @Inject constructor(
                         "ERROR_INVALID_EMAIL" -> {
                             val message = context.getString(R.string.register_email_invalid)
                             _email.value = this.email.value.copy(isError = true, errorMessage = message)
-                            showSnackbar(message = message)
+                            snackbarDispatcher.createOnlyMessageSnackbar(message)
+                            snackbarDispatcher.showSnackbar()
                         }
                         "ERROR_EMAIL_ALREADY_IN_USE" -> {
                             val message = context.getString(R.string.register_email_in_use)
                             _email.value = this.email.value.copy(isError = true, errorMessage = message)
-                            showSnackbar(message = message)
+                            snackbarDispatcher.createOnlyMessageSnackbar(message)
+                            snackbarDispatcher.showSnackbar()
                         }
                         else -> { //other error
                             val message = context.getString(R.string.register_unknown_error)
-                            showSnackbar(message = message)
+                            snackbarDispatcher.createOnlyMessageSnackbar(message)
+                            snackbarDispatcher.showSnackbar()
                         }
                     }
                 }
@@ -220,22 +219,6 @@ class RegisterViewModel @Inject constructor(
         navigationDispatcher.dispatchNavigationCommand { navController ->
             navController.popBackStack()
             navController.navigate(NavDest.LOGIN)
-        }
-    }
-
-    /**
-     * Quick way to show a snackbar.
-     * @param message Message to show.
-     */
-    private fun showSnackbar(message: String) {
-        snackbarDispatcher.dispatchSnackbarCommand { snackbarHostState ->
-            viewModelScope.launch {
-                snackbarHostState.showSnackbar(
-                    message = message,
-                    actionLabel = null,
-                    duration = SnackbarDuration.Short
-                )
-            }
         }
     }
 

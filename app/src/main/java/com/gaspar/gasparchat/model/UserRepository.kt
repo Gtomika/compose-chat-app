@@ -118,16 +118,16 @@ class UserRepository @Inject constructor(
      * @return Async [Task], can be used to add callbacks, or null if this contact was added.
      */
     @Nullable
-    fun addUserContact(user: User, contactUserUid: String): Task<Void>? {
-        if(user.contacts.contains(contactUserUid)) {
+    fun addUserFriend(user: User, contactUserUid: String): Task<Void>? {
+        if(user.friends.contains(contactUserUid)) {
             Log.d(TAG, "User already had this contact, doing nothing and returning null...")
             return null
         }
-        val updatedContacts = user.contacts + contactUserUid
+        val updatedContacts = user.friends + contactUserUid
         return firestore
             .collection(FirestoreConstants.USER_COLLECTION)
             .document(user.uid)
-            .update(FirestoreConstants.USER_CONTACTS, updatedContacts)
+            .update(FirestoreConstants.USER_FRIENDS, updatedContacts)
     }
 
     /**
@@ -288,8 +288,8 @@ fun createUid(): String {
  * @param otherUser This user will be checked if they are a contact.
  * @return True only if [otherUser] is a contact of [user].
  */
-fun isContactOf(user: User, otherUser: User): Boolean {
-    for (contactUid in user.contacts) {
+fun isFriendOf(user: User, otherUser: User): Boolean {
+    for (contactUid in user.friends) {
         if(contactUid == otherUser.uid) {
             return true
         }
@@ -301,7 +301,7 @@ fun isContactOf(user: User, otherUser: User): Boolean {
  * Utility method to check if a user is blocked by another one.
  * @param user The block list of this user will be checked.
  * @param otherUserUid This user will be checked if they are blocked.
- * @return True only if [otherUser] is blocked by [user].
+ * @return True only if [otherUserUid] is blocked by [user].
  */
 fun isBlockedBy(user: User, otherUserUid: String): Boolean {
     for(blockedUid in user.blockedUsers) {

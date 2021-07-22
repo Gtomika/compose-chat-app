@@ -35,9 +35,9 @@ sealed class HomeNavigationItem(
         title = R.string.home_chats
     )
 
-    object Contacts: HomeNavigationItem(
-        route = NavDest.HOME_CONTACTS,
-        icon = R.drawable.icon_contacts,
+    object Friends: HomeNavigationItem(
+        route = NavDest.HOME_FRIENDS,
+        icon = R.drawable.icon_friends,
         title = R.string.home_contacts
     )
 
@@ -46,4 +46,11 @@ sealed class HomeNavigationItem(
         icon = R.drawable.icon_block,
         title = R.string.home_blocked
     )
+
+    object Groups: HomeNavigationItem(
+        route = NavDest.HOME_GROUPS,
+        icon = R.drawable.icon_group,
+        title = R.string.home_groups
+    )
+
 }

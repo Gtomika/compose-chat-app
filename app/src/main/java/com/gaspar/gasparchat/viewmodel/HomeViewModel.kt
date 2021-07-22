@@ -14,7 +14,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val navigationDispatcher: NavigationDispatcher,
     val snackbarDispatcher: SnackbarDispatcher,
-    val firebaseAuth: FirebaseAuth,
+    val firebaseAuth: FirebaseAuth
 ): ViewModel() {
 
     private val _loading = MutableStateFlow(false)
@@ -38,5 +38,4 @@ class HomeViewModel @Inject constructor(
             navController.navigate(NavDest.SEARCH)
         }
     }
-
 }

@@ -51,6 +51,8 @@ class MainActivity : ComponentActivity() {
     @ExperimentalAnimationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        //set lifecycle
+        activityLifecycle = this
         //check for google play services
         if(isGooglePlayServicesAvailable(this)) {
             //show token for debug purposes
@@ -76,6 +78,11 @@ class MainActivity : ComponentActivity() {
                     Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
                 }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        activityLifecycle = null
     }
 
     private fun createNotificationChannel() {
@@ -191,3 +198,8 @@ fun MainActivityContent(
         }
     }
 }
+
+/**
+ * Lifecycle of the only activity in the app. Can be used to observe global events.
+ */
+var activityLifecycle: LifecycleOwner? = null

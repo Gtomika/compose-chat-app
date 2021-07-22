@@ -1,14 +1,8 @@
 package com.gaspar.gasparchat.viewmodel
 
-import android.app.Application
 import android.content.Context
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarResult
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.BlocklistChangedEvent
-import com.gaspar.gasparchat.GasparChatApplication
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.SnackbarDispatcher
 import com.gaspar.gasparchat.model.User
@@ -17,7 +11,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -115,18 +108,14 @@ class BlockedViewModel @Inject constructor(
                     //reassign the block list state
                     _blockedUsers.value = mutableBlockList.toList()
                     //show success snackbar with re-block option
-                    val message = context.getString(R.string.home_unblock_success, unblockDisplayName)
-                    val actionLabel = context.getString(R.string.undo)
-                    val onActionClicked = { reBlockUser(indexOfUnblocked, unblockedUser) }
-                    showSnackbar(
-                        message = message,
-                        actionLabel = actionLabel,
-                        duration = SnackbarDuration.Long,
-                        onActionClicked = onActionClicked
-                    )
+                    snackbarDispatcher.setSnackbarMessage(context.getString(R.string.home_unblock_success, unblockDisplayName))
+                    snackbarDispatcher.setSnackbarLabel(context.getString(R.string.undo))
+                    snackbarDispatcher.setSnackbarAction { reBlockUser(indexOfUnblocked, unblockedUser) } //retry action
+                    snackbarDispatcher.showSnackbar()
                 } else {
                     val message = context.getString(R.string.home_unblock_failed)
-                    showSnackbar(message)
+                    snackbarDispatcher.createOnlyMessageSnackbar(message)
+                    snackbarDispatcher.showSnackbar()
                 }
             }
     }
@@ -143,40 +132,10 @@ class BlockedViewModel @Inject constructor(
     }
 
     private fun showBlocklistLoadErrorSnackbar() {
-        val message = context.getString(R.string.home_block_error)
-        val actionLabel = context.getString(R.string.retry)
-        val onActionClicked = { getCurrentUserAndBlocks() } //retry action
-        showSnackbar(
-            message = message,
-            actionLabel = actionLabel,
-            duration = SnackbarDuration.Long,
-            onActionClicked = onActionClicked,
-        )
-    }
-
-    /**
-     * Quick way to show a snackbar.
-     * @param message Message to show.
-     */
-    private fun showSnackbar(
-        message: String,
-        duration: SnackbarDuration = SnackbarDuration.Short,
-        actionLabel: String? = null,
-        onActionClicked: VoidMethod = {}
-    ) {
-        snackbarDispatcher.dispatchSnackbarCommand { snackbarHostState ->
-            viewModelScope.launch {
-                val result = snackbarHostState.showSnackbar(
-                    message = message,
-                    actionLabel = actionLabel,
-                    duration = duration
-                )
-                when(result) {
-                    SnackbarResult.ActionPerformed -> onActionClicked.invoke()
-                    SnackbarResult.Dismissed -> { }
-                }
-            }
-        }
+        snackbarDispatcher.setSnackbarMessage(context.getString(R.string.home_block_error))
+        snackbarDispatcher.setSnackbarLabel(context.getString(R.string.retry))
+        snackbarDispatcher.setSnackbarAction { getCurrentUserAndBlocks() } //retry action
+        snackbarDispatcher.showSnackbar()
     }
 
 }

@@ -30,9 +30,11 @@ object NavDest {
 
     const val HOME_CHATS = "home_chats"
 
-    const val HOME_CONTACTS = "home_contacts"
+    const val HOME_FRIENDS = "home_contacts"
 
     const val HOME_BLOCKED = "home_blocked"
+
+    const val HOME_GROUPS = "home_groups"
 }
 
 /**
@@ -87,7 +89,7 @@ object FirestoreConstants {
 
     const val USER_CHAT_ROOMS = "chatRooms"
 
-    const val USER_CONTACTS = "contacts"
+    const val USER_FRIENDS = "friends"
 
     const val USER_BLOCKS = "blockedUsers"
 
@@ -106,6 +108,12 @@ object FirestoreConstants {
     const val CHAT_ROOM_MESSAGES = "chatRoomMessages"
 
     const val CHAT_ROOM_GROUP = "group"
+
+    const val CHAT_ROOM_ADMIN = "admin"
+
+    const val CHAT_ROOM_LAST_MESSAGE_TIME = "lastMessageTime"
+
+    const val CHAT_ROOM_LAST_MESSAGE_TEXT = "lastMessageText"
 
     // --------------------- MESSAGE SUB-COLLECTION collection. -----------------------------------
 
@@ -134,7 +142,13 @@ object BlocklistChangedEvent
  * Message type that is fired when a component signals that the contacts list has updated.
  */
 @Keep
-object ContactsChangedEvent
+object FriendsChangedEvent
+
+/**
+ * Message type that is sent when a component changes the current users groups.
+ */
+@Keep
+object GroupsChangedEvent
 
 /**
  * Message type that is fired when a component signals that a new chat room should be loaded.

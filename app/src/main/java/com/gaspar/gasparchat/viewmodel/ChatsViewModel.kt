@@ -1,13 +1,7 @@
 package com.gaspar.gasparchat.viewmodel
 
-import android.app.Application
 import android.content.Context
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarResult
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.gaspar.gasparchat.GasparChatApplication
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.SnackbarDispatcher
 import com.gaspar.gasparchat.model.User
@@ -16,7 +10,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -51,39 +44,10 @@ class ChatsViewModel @Inject constructor(
     }
 
     private fun showChatLoadingErrorSnackbar() {
-        val message = context.getString(R.string.home_chats_error)
-        val actionLabel = context.getString(R.string.retry)
-        showSnackbar(
-            message = message,
-            actionLabel = actionLabel,
-            duration = SnackbarDuration.Long,
-            onActionClicked = { getCurrentUserAndChats() }
-        )
-    }
-
-    /**
-     * Quick way to show a snackbar.
-     * @param message Message to show.
-     */
-    private fun showSnackbar(
-        message: String,
-        duration: SnackbarDuration = SnackbarDuration.Short,
-        actionLabel: String? = null,
-        onActionClicked: VoidMethod = {}
-    ) {
-        snackbarDispatcher.dispatchSnackbarCommand { snackbarHostState ->
-            viewModelScope.launch {
-                val result = snackbarHostState.showSnackbar(
-                    message = message,
-                    actionLabel = actionLabel,
-                    duration = duration
-                )
-                when(result) {
-                    SnackbarResult.ActionPerformed -> onActionClicked.invoke()
-                    SnackbarResult.Dismissed -> { }
-                }
-            }
-        }
+        snackbarDispatcher.setSnackbarMessage(context.getString(R.string.home_chats_error))
+        snackbarDispatcher.setSnackbarLabel(context.getString(R.string.retry))
+        snackbarDispatcher.setSnackbarAction { getCurrentUserAndChats() } //retry action
+        snackbarDispatcher.showSnackbar()
     }
 
 }

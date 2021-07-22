@@ -1,11 +1,7 @@
 package com.gaspar.gasparchat.viewmodel
 
-import android.app.Application
 import android.content.Context
-import androidx.compose.material.SnackbarDuration
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.model.UserRepository
@@ -16,7 +12,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -160,14 +155,16 @@ class ProfileViewModel @Inject constructor(
                             //loading is over
                             _loading.value = false
                             val message = context.getString(R.string.profile_display_name_update_success)
-                            showSnackbar(message = message)
+                            snackbarDispatcher.createOnlyMessageSnackbar(message)
+                            snackbarDispatcher.showSnackbar()
                             //update actual string as well, that is watched by other composables
                             _displayName.value = newDisplayName
                         } else {
                             //loading is over
                             _loading.value = false
                             val message = context.getString(R.string.profile_display_name_update_fail)
-                            showSnackbar(message = message)
+                            snackbarDispatcher.createOnlyMessageSnackbar(message)
+                            snackbarDispatcher.showSnackbar()
                         }
                 }
 
@@ -175,7 +172,8 @@ class ProfileViewModel @Inject constructor(
                 //loading is over
                 _loading.value = false
                 val message = context.getString(R.string.profile_display_name_update_fail)
-                showSnackbar(message = message)
+                snackbarDispatcher.createOnlyMessageSnackbar(message)
+                snackbarDispatcher.showSnackbar()
             }
         }
     }
@@ -248,17 +246,20 @@ class ProfileViewModel @Inject constructor(
                         _newPassword.value = newPassword.value.copy(input = "")
                         _newPasswordAgain.value = newPasswordAgain.value.copy(input = "")
                         val message = context.getString(R.string.profile_update_password_success)
-                        showSnackbar(message)
+                        snackbarDispatcher.createOnlyMessageSnackbar(message)
+                        snackbarDispatcher.showSnackbar()
                     } else {
                         val message = context.getString(R.string.profile_update_password_fail)
-                        showSnackbar(message)
+                        snackbarDispatcher.createOnlyMessageSnackbar(message)
+                        snackbarDispatcher.showSnackbar()
                     }
                 }
             } else {
                 _loading.value = false
                 //something went wrong: probably incorrect password
                 val message = context.getString(R.string.profile_update_password_old_incorrect)
-                showSnackbar(message)
+                snackbarDispatcher.createOnlyMessageSnackbar(message)
+                snackbarDispatcher.showSnackbar()
             }
         }
     }
@@ -274,7 +275,8 @@ class ProfileViewModel @Inject constructor(
            displayUpdateAuthenticateDialog() //start re authentication
         } else {
             val message = context.getString(R.string.register_password_not_matching)
-            showSnackbar(message = message)
+            snackbarDispatcher.createOnlyMessageSnackbar(message)
+            snackbarDispatcher.showSnackbar()
         }
     }
 
@@ -303,14 +305,16 @@ class ProfileViewModel @Inject constructor(
                     } else {
                         //failed to delete
                         val message = context.getString(R.string.profile_delete_account_fail)
-                        showSnackbar(message)
+                        snackbarDispatcher.createOnlyMessageSnackbar(message)
+                        snackbarDispatcher.showSnackbar()
                     }
                 }
             } else {
                 _loading.value = false
                 //something went wrong: probably incorrect password
                 val message = context.getString(R.string.profile_update_password_old_incorrect)
-                showSnackbar(message)
+                snackbarDispatcher.createOnlyMessageSnackbar(message)
+                snackbarDispatcher.showSnackbar()
             }
         }
     }
@@ -329,22 +333,6 @@ class ProfileViewModel @Inject constructor(
 
     fun hideDeleteAuthenticateDialog() {
         _showDeleteAuthenticateDialog.value = false
-    }
-
-    /**
-     * Quick way to show a snackbar.
-     * @param message Message to show.
-     */
-    private fun showSnackbar(message: String) {
-        snackbarDispatcher.dispatchSnackbarCommand { snackbarHostState ->
-            viewModelScope.launch {
-                snackbarHostState.showSnackbar(
-                    message = message,
-                    actionLabel = null,
-                    duration = SnackbarDuration.Short
-                )
-            }
-        }
     }
 
     /**
