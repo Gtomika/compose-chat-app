@@ -8,6 +8,10 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+db.settings({
+    ignoreUndefinedProperties: true
+})
+
 
 
 // // Create and Deploy Your First Cloud Functions
@@ -36,7 +40,7 @@ exports.chatRoomNewMessage = functions
     .onCreate((snap, context) => {
         //this chat room received a new message
         const chatRoomUid = context.params.chatRoomUid
-        console.log('New message cloud function: new message detected in ' + chatRoomUid)
+        //console.log('New message cloud function: new message detected in ' + chatRoomUid)
         //the new message object
         const newMessage = snap.data()
         //get a document reference to the parent, a Chat Room
@@ -48,13 +52,13 @@ exports.chatRoomNewMessage = functions
             //get ref to each user and send them FCM message
             if(chatRoom.chatRoomUsers) {
                 if(!chatRoom.group) {
-                    console.log('This message is in a One-to-One chat, sending FCM message to other user!')
+                    //console.log('This message is in a One-to-One chat, sending FCM message to other user!')
                     //2 users (one-to-one), only send message to the other
                     const otherUserUid = getOtherUserUid(chatRoom.chatRoomUsers, newMessage.senderUid)
 
                     return db.collection('users').doc(otherUserUid).get().then(userDoc => {
                         if(userDoc.exists) {
-                            console.log('Other user queried, their display name is ' + userDoc.data().displayName + ', their token is ' + userDoc.data().messageToken)
+                            //console.log('Other user queried, their display name is ' + userDoc.data().displayName + ', their token is ' + userDoc.data().messageToken)
 
                             //dont send notification if the target blocked the message sender
                             if(isBlockedBy(userDoc.data(), newMessage.senderUid)) {
@@ -70,7 +74,7 @@ exports.chatRoomNewMessage = functions
                             )
 
                             return admin.messaging().send(notification).then(response => { //response is a FCM message id, not used
-                                console.log('Other user received the message!')
+                                //console.log('Other user received the message!')
                                 return true
                             })
                             .catch(error => {
@@ -83,9 +87,10 @@ exports.chatRoomNewMessage = functions
                         }
                     })
                 } else {
-                    console.log('This message is in a Group chat, sending message to all other group members!')
                     //more then 2 users (GROUP): get all users except the one who sent the message
                     const otherUserUids = getOtherUserUids(chatRoom.chatRoomUsers, newMessage.senderUid)
+                    
+                    //console.log('This message is in a Group chat, sending message to other ' + otherUserUids.length + ' users!')
                     return db.collection('users').where('uid', 'in', otherUserUids).get().then(usersSnapshot => {
                         if(!usersSnapshot.empty) {
                             //get tokens of these other users
@@ -93,10 +98,12 @@ exports.chatRoomNewMessage = functions
                             usersSnapshot.forEach( otherUserDoc => {
                                 //dont send notification if the target blocked the message sender
                                 if(!isBlockedBy(otherUserDoc.data(), newMessage.senderUid)) {
-                                    otherUserTokens.push(otherUserDoc.data().messageToken)
+                                    if(otherUserDoc.data().messageToken !== '') {
+                                        otherUserTokens.push(otherUserDoc.data().messageToken)
+                                    }
                                 }
                             })
-                            console.log('Collected ' + (otherUserTokens.length) + ' other users who will receive FCM message (users who blocked the sender are not included)!')
+                            //console.log('Collected ' + (otherUserTokens.length) + ' other users who will receive FCM message (users who blocked the sender are not included)!')
 
                             //build and send notifications
                             const notification = buildNotificationForGroup(
@@ -107,7 +114,7 @@ exports.chatRoomNewMessage = functions
                             )
 
                             return admin.messaging().sendMulticast(notification).then((response) => {
-                                console.log(response.successCount + ' messages were sent successfully!');
+                                //console.log(response.successCount + ' messages were sent successfully!');
                                 return true
                             }).catch(error => {
                                 console.log('Failed to deliver FCM messages to group members: ' + error)
@@ -132,14 +139,17 @@ exports.chatRoomNewMessage = functions
         }
     }
 
-    //users list is assumed to be more then 2 long
     function getOtherUserUids(userUids, senderUid) {
         otherUserUids = []
-        for(userUid in userUids) {
-            if(userUid !== senderUid) {
-                otherUserUids.push(userUid)
+        for(const userUid of userUids) {
+            if(userUid === senderUid) {
+                //console.log('Not adding sender to the list: ' + senderUid)
+                continue
             }
+            //console.log('Adding other user to the message list: ' + userUid)
+            otherUserUids.push(userUid)
         }
+        return otherUserUids
     }
 
     //check if user has otherUserUid blocked

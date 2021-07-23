@@ -63,7 +63,8 @@ class FriendsViewModel @Inject constructor(
                     userRepository.getUsersByUid(currentUser.value.friends).addOnCompleteListener { contactsQueryResult ->
                         _loading.value = false
                         if(contactsQueryResult.isSuccessful && contactsQueryResult.result != null) {
-                            _friends.value = contactsQueryResult.result!!.toObjects(User::class.java)
+                            val rawData = contactsQueryResult.result!!.toObjects(User::class.java)
+                            _friends.value = rawData.sortedBy { it.displayName }
                         } else {
                             //failed to get contacts
                             showFriendsErrorSnackbar()

@@ -61,7 +61,8 @@ class GroupsViewModel @Inject constructor(
         val userUid = firebaseAuth.currentUser!!.uid
         chatRoomRepository.getGroupsOfUser(userUid).addOnCompleteListener { groupsResult ->
             if(groupsResult.isSuccessful && groupsResult.result != null) {
-                _groups.value = groupsResult.result!!.toObjects(ChatRoom::class.java)
+                val rawData = groupsResult.result!!.toObjects(ChatRoom::class.java)
+                _groups.value = rawData.sortedBy { it.chatRoomName }
             } else {
                 val message = context.getString(R.string.home_groups_fail)
                 snackbarDispatcher.createOnlyMessageSnackbar(message)

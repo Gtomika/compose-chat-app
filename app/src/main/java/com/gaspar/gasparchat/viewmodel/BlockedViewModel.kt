@@ -61,7 +61,8 @@ class BlockedViewModel @Inject constructor(
                     userRepository.getUsersByUid(currentUser.value.blockedUsers).addOnCompleteListener { blocksQueryResult ->
                         _loading.value = false
                         if(blocksQueryResult.isSuccessful && blocksQueryResult.result != null) {
-                            _blockedUsers.value = blocksQueryResult.result!!.toObjects(User::class.java)
+                            val rawData = blocksQueryResult.result!!.toObjects(User::class.java)
+                            _blockedUsers.value = rawData.sortedBy { it.displayName }
                         } else {
                             //failed to get blocklist
                             showBlocklistLoadErrorSnackbar()

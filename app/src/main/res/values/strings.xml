@@ -37,6 +37,9 @@
 
     <string name="home_title">Üdv, %1$s!</string>
     <string name="home_chats">Csevegések</string>
+    <string name="home_no_chats">Nincsenek beszélgetéseid.</string>
+    <string name="home_last_message">Utolsó üzenet:</string>
+    <string name="home_chat_title_group">Csoport</string>
     <string name="home_contacts">Barátok</string>
     <string name="home_blocked">Tiltások</string>
     <string name="home_no_friends">Nem adtál hozzá barátokat.</string>

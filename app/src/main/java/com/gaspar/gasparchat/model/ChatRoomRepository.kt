@@ -6,8 +6,6 @@ import com.google.android.gms.tasks.Tasks
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
-import org.apache.commons.codec.binary.Base64
-import java.nio.ByteBuffer
 import java.util.*
 import javax.inject.Inject
 
@@ -78,7 +76,7 @@ class ChatRoomRepository @Inject constructor(
      */
     fun createGroupChatRoom(chatRoomName: String, userUidList: List<String>, adminUid: String): Task<Void> {
         val chatRoom = ChatRoom(
-            chatUid = generateChatUid(userUidList),
+            chatUid = UUID.randomUUID().toString(),
             chatRoomName = chatRoomName,
             chatRoomUsers = userUidList,
             group = true,
@@ -168,45 +166,10 @@ class ChatRoomRepository @Inject constructor(
      * @return A UID for the chat room between these 2 users.
      */
     fun generateChatUid(userUid1: String, userUid2: String): String {
-        return if(userUid1 < userUid2) {
+        return if (userUid1 < userUid2) {
             userUid1 + userUid2
         } else {
             userUid2 + userUid1
         }
-    }
-
-    /**
-     * Generates a chat room UID from a list of [User] UIDs. This could be a long string, so shortening
-     * is applied. The order of the users do not matter.
-     * @param userUidList List of [User] UIDs.
-     * @return A UID string created from the user UIDs.
-     */
-    private fun generateChatUid(userUidList: List<String>): String {
-        val orderedUserUidList = userUidList.sorted()
-        val chatRoomUid: String
-        when {
-            orderedUserUidList.size < 2 -> {
-                throw RuntimeException("Chat room ID needs at least 2 user UID-s!")
-            }
-            orderedUserUidList.size == 2 -> {
-                //group with only 2 members
-                chatRoomUid = generateChatUid(orderedUserUidList[0], orderedUserUidList[1])
-            }
-            else -> {
-                var longUid = ""
-                orderedUserUidList.forEach { userUid ->
-                    longUid += userUid
-                }
-                //group with more then two members, UID needs shortening
-                val uuid: UUID = UUID.fromString(longUid)
-                val bb: ByteBuffer = ByteBuffer.wrap(ByteArray(16))
-                bb.putLong(uuid.mostSignificantBits)
-                bb.putLong(uuid.leastSignificantBits)
-                val shortUid = Base64.encodeBase64URLSafeString(bb.array())
-                //replace characters
-                chatRoomUid = shortUid.replace("_","").replace("-","")
-            }
-        }
-        return chatRoomUid
     }
 }

@@ -56,6 +56,12 @@ object NameLimits {
 
 }
 
+object GroupLimits {
+
+    const val MAX_MEMBERS = 8
+
+}
+
 /**
  * Limits of the length of text in the search bar.
  */
@@ -149,6 +155,12 @@ object FriendsChangedEvent
  */
 @Keep
 object GroupsChangedEvent
+
+/**
+ * Send when the first message is sent in a chat room.
+ */
+@Keep
+object ChatStartedEvent
 
 /**
  * Message type that is fired when a component signals that a new chat room should be loaded.

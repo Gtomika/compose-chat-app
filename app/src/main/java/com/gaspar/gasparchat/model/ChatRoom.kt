@@ -15,7 +15,8 @@ import java.util.*
 data class ChatRoom(
 
     /**
-     * Unique identifier of the chat room. This is the document key in firestore collection
+     * Unique identifier of the chat room. This is the document key in firestore collection. For one
+     * to one chat rooms, the UID is created from the 2 users, for groups it is random.
      */
     @PropertyName(FirestoreConstants.CHAT_ROOM_UID)
     var chatUid: String = "",

@@ -453,6 +453,8 @@ class ChatRoomViewModel @Inject constructor(
      * Called when the user clicks send message. The typed message is assumed to be valid.
      */
     fun onMessageSent() {
+        //check if this is the first message
+        val wasFirstMessage = messages.value.isEmpty()
         //create message object, UID and timestamp are auto generated
         val message = Message(
             messageText = typedMessage.value.input,
@@ -466,7 +468,12 @@ class ChatRoomViewModel @Inject constructor(
         //start async task that sends message to firestore
         chatRoomRepository.addMessageToChatRoom(chatRoomUid = chatRoom.value.chatUid, message = message)
             ?.addOnCompleteListener { messageResult ->
-                if(!messageResult.isSuccessful) {
+                if(messageResult.isSuccessful) {
+                    //if the first message was sent, refresh chats
+                    if(wasFirstMessage) {
+                        EventBus.getDefault().post(ChatStartedEvent)
+                    }
+                } else {
                     val error = context.getString(R.string.chat_message_send_fail)
                     snackbarDispatcher.createOnlyMessageSnackbar(error)
                     snackbarDispatcher.showSnackbar()
