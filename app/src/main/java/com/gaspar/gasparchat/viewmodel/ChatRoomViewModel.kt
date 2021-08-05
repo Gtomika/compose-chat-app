@@ -117,7 +117,7 @@ class ChatRoomViewModel @Inject constructor(
         //indicate loading (it will disappear once loading process amount resets to 0)
         _loading.value = true
         //load current user
-        loadLocalUserAndAddChatRoom(event.chatRoomId)
+        loadLocalUserAndAddChatRoom()
         //load all data about the chat room
         getChatRoomAndMembers(event.chatRoomId)
     }
@@ -169,37 +169,17 @@ class ChatRoomViewModel @Inject constructor(
      * Fetches the local user from firestore and adds this chat room to their chat room list,
      * if not already present.
      */
-    private fun loadLocalUserAndAddChatRoom(chatRoomUid: String) {
+    private fun loadLocalUserAndAddChatRoom() {
         userRepository.getCurrentUser().addOnCompleteListener { currentUserResult ->
             if(currentUserResult.isSuccessful && currentUserResult.result != null) {
                 _localUser.value = currentUserResult.result!!.toObjects(User::class.java)[0]
-                //continue with other task
+                EventBus.getDefault().post(LoadingFinishedEvent)
             } else {
                 //this task cannot go on
                 EventBus.getDefault().post(LoadingFinishedEvent)
                 val failMessage = context.getString(R.string.chat_load_fail)
                 snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
                 snackbarDispatcher.showSnackbar()
-            }
-        }.continueWith { previousTask ->
-            //add chat room if needed
-            if(previousTask.isSuccessful) {
-                Log.d(TAG, "Obtained local user ${localUser.value.displayName}, checking their chat room UID...")
-                if(!isUserInChatRoom(localUser.value, chatRoomUid)) {
-                    //user is not in this chat room yet
-                    userRepository.addUserChatRoom(localUser.value, chatRoomUid)?.addOnCompleteListener { addGroupResult ->
-                        //local user is ready and up to date
-                        EventBus.getDefault().post(LoadingFinishedEvent)
-                        if(!addGroupResult.isSuccessful) {
-                            val failMessage = context.getString(R.string.chat_load_fail)
-                            snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
-                            snackbarDispatcher.showSnackbar()
-                        }
-                    }
-                } else {
-                    //user is already in the chat room, nothing more to do
-                    EventBus.getDefault().post(LoadingFinishedEvent)
-                }
             }
         }
     }

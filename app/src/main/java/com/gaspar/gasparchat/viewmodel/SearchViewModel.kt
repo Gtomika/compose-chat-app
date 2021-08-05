@@ -116,8 +116,9 @@ class SearchViewModel @Inject constructor(
      * @param searchString The search bar's value.
      */
     fun searchForUsers(searchString: String) {
+        val searchStringTrimmed = searchString.trim()
         if(!searchBar.value.isError) {
-            Log.d(TAG, "Search begins with string $searchString...")
+            Log.d(TAG, "Search begins with string $searchStringTrimmed...")
             //indicate loading
             _loading.value = true
             val matchingUsers = mutableListOf<User>()
@@ -133,7 +134,7 @@ class SearchViewModel @Inject constructor(
                                     continue //don't add the current user to the results
                                 }
                                 //if the search string is in the name, save it
-                                if(user.displayName.contains(searchString, ignoreCase = true)) {
+                                if(user.displayName.contains(searchStringTrimmed, ignoreCase = true)) {
                                     matchingUsers.add(user)
                                 }
                             }

@@ -245,26 +245,6 @@ class UserRepository @Inject constructor(
     }
 
     /**
-     * Adds a [ChatRoom] UID to an [User]s document, if not already present.
-     * @param user The contacts of this user will be checked.
-     * @param chatRoomUid UID of the chatroom.
-     * @return Async [Task] or null if the user was already in the chat room.
-     */
-    fun addUserChatRoom(user: User, chatRoomUid: String): Task<Void>? {
-        return if(!isUserInChatRoom(user, chatRoomUid)) {
-            Log.d(TAG, "Adding new chat room to user ${user.displayName}...")
-            val newChatRooms = user.chatRooms + chatRoomUid
-            firestore
-                .collection(FirestoreConstants.USER_COLLECTION)
-                .document(user.uid)
-                .update(FirestoreConstants.USER_CHAT_ROOMS, newChatRooms)
-        } else {
-            Log.d(TAG, "${user.displayName} was already in chat room!")
-            return null
-        }
-    }
-
-    /**
      * Converts [FirebaseUser] object to [User] object.
      * @param firebaseUser The firebase user.
      * @return The [User] object.
@@ -306,21 +286,6 @@ fun isFriendOf(user: User, otherUser: User): Boolean {
 fun isBlockedBy(user: User, otherUserUid: String): Boolean {
     for(blockedUid in user.blockedUsers) {
         if(blockedUid == otherUserUid) {
-            return true
-        }
-    }
-    return false
-}
-
-/**
- * Utility method for checking if a [User] is in a [ChatRoom].
- * @param user The user.
- * @param selectedChatRoomUid UID of the chatroom.
- * @return True if the user is in the chat room, false otherwise.
- */
-fun isUserInChatRoom(user: User, selectedChatRoomUid: String): Boolean {
-    for(chatRoomUid in user.chatRooms) {
-        if(chatRoomUid == selectedChatRoomUid) {
             return true
         }
     }

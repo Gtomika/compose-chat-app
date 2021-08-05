@@ -75,12 +75,12 @@ class ChatsViewModel @Inject constructor(
             if(currentUserResult.isSuccessful && currentUserResult.result != null) {
                 _currentUser.value = currentUserResult.result!!.toObjects(User::class.java)[0]
                 //get all chat room of this user
-                chatRoomRepository.getGroupsOfUser(currentUser.value.uid).addOnCompleteListener { chatsResult ->
+                chatRoomRepository.getChatRoomsOfUser(currentUser.value.uid).addOnCompleteListener { chatsResult ->
                     if(chatsResult.isSuccessful && chatsResult.result != null) {
                         val rawData = chatsResult.result!!.toObjects(ChatRoom::class.java)
-                        _chats.value = sortChatRoomsByActivity(rawData)
+                        val chats = sortChatRoomsByActivity(rawData)
                         //now get other user UIDs
-                        val otherUsers = getOtherUsers(chats.value)
+                        val otherUsers = getOtherUsers(chats)
                         if(otherUsers.isNotEmpty()) {
                             userRepository.getUsersByUid(otherUsers).addOnCompleteListener { otherUserResult ->
                                 if(otherUserResult.isSuccessful && otherUserResult.result != null) {
@@ -89,6 +89,7 @@ class ChatsViewModel @Inject constructor(
                                 } else {
                                     showChatLoadingErrorSnackbar()
                                 }
+                                _chats.value = chats
                                 _loading.value = false
                             }
                         } else {
@@ -128,7 +129,7 @@ class ChatsViewModel @Inject constructor(
         return if(chatRoom.group) {
             chatRoom.admin!!
         } else {
-            if(chatRoom.chatRoomUsers[0] == currentUser.value.displayName) {
+            if(chatRoom.chatRoomUsers[0] == currentUser.value.uid) {
                 chatRoom.chatRoomUsers[1]
             } else {
                 chatRoom.chatRoomUsers[0]

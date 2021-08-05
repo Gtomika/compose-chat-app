@@ -36,7 +36,7 @@
     <string name="register_name_incorrect_length">A név min. %1$d és max. %2$d karakter lehet</string>
 
     <string name="home_title">Üdv, %1$s!</string>
-    <string name="home_chats">Csevegések</string>
+    <string name="home_chats">Aktív</string>
     <string name="home_no_chats">Nincsenek beszélgetéseid.</string>
     <string name="home_last_message">Utolsó üzenet:</string>
     <string name="home_chat_title_group">Csoport</string>

@@ -100,7 +100,7 @@ class ChatRoomRepository @Inject constructor(
     fun createOneToOneChatRoom(userUid1: String, userUid2: String): Task<Void> {
         val chatRoom = ChatRoom(
             chatUid = generateChatUid(userUid1, userUid2),
-            chatRoomName =  "OneOnOnChat", //name is not important here
+            chatRoomName =  "Private Chat", //name is not important here
             chatRoomUsers = listOf(userUid1, userUid2),
             group = false
             //message sub collection is not created yet, only at first message

@@ -102,30 +102,30 @@ fun GroupChatCard(
             Row(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
             ) {
                 //TODO: when implemented, this can be replaced with other user picture
                 Icon(
                     painter = painterResource(id = R.drawable.icon_group),
                     contentDescription = groupName,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(start = 16.dp)
                 )
                 Text(
                     text = groupName,
                     style = MaterialTheme.typography.subtitle1,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(start = 16.dp)
                 )
             }
             Row(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)
             ) {
                 Text(
                     text = stringResource(id = R.string.home_last_message),
                     style = MaterialTheme.typography.body2,
                     maxLines = 1,
-                    fontWeight = FontWeight.Bold
+                    modifier = Modifier.padding(start = 16.dp)
                 )
                 //displays last message
                 Text(
@@ -133,8 +133,8 @@ fun GroupChatCard(
                     style = MaterialTheme.typography.body2,
                     maxLines = 1,
                     textAlign = TextAlign.Start,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 16.dp)
                 )
             }
         }
@@ -158,30 +158,31 @@ fun OneToOneChatCard(
             Row(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
             ) {
                 //TODO: when implemented, this can be replaced with other user picture
                 Icon(
                     painter = painterResource(id = R.drawable.icon_chat),
                     contentDescription = otherUserName,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(start = 16.dp)
                 )
                 Text(
                     text = otherUserName,
                     style = MaterialTheme.typography.subtitle1,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(start = 16.dp)
                 )
             }
             Row(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)
             ) {
                 Text(
                     text = stringResource(id = R.string.home_last_message),
                     style = MaterialTheme.typography.body2,
                     maxLines = 1,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 16.dp)
                 )
                 //displays last message
                 Text(
@@ -189,8 +190,8 @@ fun OneToOneChatCard(
                     style = MaterialTheme.typography.body2,
                     maxLines = 1,
                     textAlign = TextAlign.Start,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 16.dp)
                 )
             }
 

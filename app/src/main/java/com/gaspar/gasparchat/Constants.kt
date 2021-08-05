@@ -93,8 +93,6 @@ object FirestoreConstants {
 
     const val USER_DISPLAY_NAME = "displayName"
 
-    const val USER_CHAT_ROOMS = "chatRooms"
-
     const val USER_FRIENDS = "friends"
 
     const val USER_BLOCKS = "blockedUsers"
