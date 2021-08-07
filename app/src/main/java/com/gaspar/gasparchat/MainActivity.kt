@@ -32,6 +32,7 @@ import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
+import org.greenrobot.eventbus.EventBus
 import javax.inject.Inject
 
 
@@ -139,6 +140,17 @@ class MainActivity : ComponentActivity() {
      */
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
+        if(intent != null && intent.extras != null) {
+            //this intent has extras
+            if(intent.extras!!.containsKey(INTENT_CHAT_ROOM_ID)) {
+                //the extras contain a chat room UID: load and open this chat room
+                val chatRoomUid = intent.extras!!.getString(INTENT_CHAT_ROOM_ID)!!
+                Log.d(TAG, "onNewIntent was called with a chat room UID: $chatRoomUid")
+                EventBus.getDefault().post(ChatRoomChangedEvent(chatRoomUid))
+            }
+        } else {
+            Log.d(TAG, "onNewIntent called without tag or extras. Ignoring...")
+        }
     }
 }
 

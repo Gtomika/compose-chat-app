@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.ChatRoom
 import com.gaspar.gasparchat.model.ChatRoomRepository
+import com.gaspar.gasparchat.model.User
+import com.gaspar.gasparchat.model.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,7 +24,7 @@ class GroupsViewModel @Inject constructor(
     private val chatRoomRepository: ChatRoomRepository,
     val snackbarDispatcher: SnackbarDispatcher,
     private val firebaseAuth: FirebaseAuth,
-    private val navigationDispatcher: NavigationDispatcher
+    private val userRepository: UserRepository
 ): ViewModel() {
 
     private val _loading = MutableStateFlow(false)
@@ -39,6 +41,12 @@ class GroupsViewModel @Inject constructor(
      */
     private val _groups = MutableStateFlow(listOf<ChatRoom>())
     val groups: StateFlow<List<ChatRoom>> = _groups
+
+    /**
+     * Admins of the groups.
+     */
+    private val _admins = MutableStateFlow(listOf<User>())
+    val admins: StateFlow<List<User>> = _admins
 
     init {
         EventBus.getDefault().register(this)
@@ -62,7 +70,27 @@ class GroupsViewModel @Inject constructor(
         chatRoomRepository.getGroupsOfUser(userUid).addOnCompleteListener { groupsResult ->
             if(groupsResult.isSuccessful && groupsResult.result != null) {
                 val rawData = groupsResult.result!!.toObjects(ChatRoom::class.java)
-                _groups.value = rawData.sortedBy { it.chatRoomName }
+                val groupsSorted = rawData.sortedBy { it.chatRoomName }
+
+                val adminUIDs = mutableListOf<String>()
+                for(group in groupsSorted) {
+                    adminUIDs.add(group.admin!!)
+                }
+                //get admins
+                userRepository.getUsersByUid(adminUIDs).addOnCompleteListener { adminsResult ->
+                    if(adminsResult.isSuccessful && adminsResult.result != null) {
+                        Log.d(TAG, "Queried groups and group admins!")
+                        //assign admins
+                        _admins.value = adminsResult.result!!.toObjects(User::class.java)
+                        //assign groups
+                        _groups.value = groupsSorted
+                    } else {
+                        val message = context.getString(R.string.home_groups_fail)
+                        snackbarDispatcher.createOnlyMessageSnackbar(message)
+                        snackbarDispatcher.showSnackbar()
+                    }
+                }
+
             } else {
                 val message = context.getString(R.string.home_groups_fail)
                 snackbarDispatcher.createOnlyMessageSnackbar(message)
@@ -117,9 +145,5 @@ class GroupsViewModel @Inject constructor(
         //send event to load chat room
         val event = ChatRoomChangedEvent(chatRoomUid)
         EventBus.getDefault().post(event)
-        //navigate there
-        navigationDispatcher.dispatchNavigationCommand { navController ->
-            navController.navigate(NavDest.CHAT_ROOM)
-        }
     }
 }

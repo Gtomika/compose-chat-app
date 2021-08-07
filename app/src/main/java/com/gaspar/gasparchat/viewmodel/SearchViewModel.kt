@@ -209,10 +209,6 @@ class SearchViewModel @Inject constructor(
         //send event to load chat room
         val event = ChatRoomChangedEvent(chatRoomUid)
         EventBus.getDefault().post(event)
-        //navigate there
-        navigationDispatcher.dispatchNavigationCommand { navController ->
-            navController.navigate(NavDest.CHAT_ROOM)
-        }
     }
 
     /**

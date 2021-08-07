@@ -12,15 +12,79 @@ db.settings({
     ignoreUndefinedProperties: true
 })
 
+/*
+Listen when a new group is created.
+ - Collection: chatRooms
+ - Document index: chat room UID (wildcarded)
+*/
+exports.newGroupCreated = functions
+    .region('europe-west1')
+    .firestore
+    .document('chatRooms/{chatRoomUid}')
+    .onCreate((chatRoomSnap, context) => {
+        //UID of created chat room
+        const chatRoomUid = context.params.chatRoomUid
+        //actual object
+        const chatRoom = chatRoomSnap.data()
+        //only proceed if this is a group
+        if(chatRoom.group && chatRoom.chatRoomUsers.length > 0) {
+            //query all the users who are in this group
+            return db.collection('users').where('uid', 'in', chatRoom.chatRoomUsers).get().then(usersSnapshot => {
+                if(!usersSnapshot.empty) {
+                    //collect tokens of other uses who are not blocked by the admin in this list
+                    const tokens = []
+                    //collect the name of the admin in this variable
+                    let adminName = ''
+                    usersSnapshot.forEach(userDoc => {
+                        if(userDoc.data().uid === chatRoom.admin) {
+                            //this is the admin, save his name
+                            adminName = userDoc.data().displayName
+                        } else {
+                            //this is not the admin, if he did not block the admin, send notification
+                            if(!isBlockedBy(userDoc.data(), chatRoom.admin)) {
+                                tokens.push(userDoc.data().messageToken)
+                            }
+                        }
+                    })
+                    //create notification
+                    const notification = buildNewGroupNotification(
+                        chatRoomUid,
+                        chatRoom.chatRoomName,
+                        adminName,
+                        tokens
+                    )
+                    //send notification
+                    return admin.messaging().sendMulticast(notification).then((response) => {
+                        //console.log(response.successCount + ' messages were sent successfully!');
+                        return true
+                    }).catch(error => {
+                        console.log('Failed to deliver FCM messages to NEW group members: ' + error)
+                        return false
+                    });
+                } else {
+                    console.log('No members found for new group ' + chatRoom.chatRoomName + '! This is a database error!')
+                    return false
+                }
+            })
+        } else {
+            return false
+        }
+    });
 
-
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-// exports.helloWorld = functions.https.onRequest((request, response) => {
-//   functions.logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+function buildNewGroupNotification(_chatRoomUid, chatRoomName, adminName, _tokens) {
+    const message = {
+        notification: {
+            title: 'Új csoport: ' + chatRoomName,
+            body: adminName + ' felvett ebbe a csoportba!'
+        },
+        data: {
+            chatRoomUid: _chatRoomUid,
+            messageType: "new_group"
+        },
+        tokens: _tokens
+    }
+    return message
+}
 
 /*
 Listen when a Chat Room document gets a new message.
@@ -53,7 +117,7 @@ exports.chatRoomNewMessage = functions
             if(chatRoom.chatRoomUsers) {
                 if(!chatRoom.group) {
                     //console.log('This message is in a One-to-One chat, sending FCM message to other user!')
-                    //2 users (one-to-one), only send message to the other
+                    //(one-to-one), only send message to the other
                     const otherUserUid = getOtherUserUid(chatRoom.chatRoomUsers, newMessage.senderUid)
 
                     return db.collection('users').doc(otherUserUid).get().then(userDoc => {
@@ -87,19 +151,22 @@ exports.chatRoomNewMessage = functions
                         }
                     })
                 } else {
-                    //more then 2 users (GROUP): get all users except the one who sent the message
-                    const otherUserUids = getOtherUserUids(chatRoom.chatRoomUsers, newMessage.senderUid)
-                    
                     //console.log('This message is in a Group chat, sending message to other ' + otherUserUids.length + ' users!')
-                    return db.collection('users').where('uid', 'in', otherUserUids).get().then(usersSnapshot => {
+                    return db.collection('users').where('uid', 'in', chatRoom.chatRoomUsers).get().then(usersSnapshot => {
                         if(!usersSnapshot.empty) {
                             //get tokens of these other users
                             const otherUserTokens = []
+                            let senderName = ''
                             usersSnapshot.forEach( otherUserDoc => {
-                                //dont send notification if the target blocked the message sender
-                                if(!isBlockedBy(otherUserDoc.data(), newMessage.senderUid)) {
-                                    if(otherUserDoc.data().messageToken !== '') {
-                                        otherUserTokens.push(otherUserDoc.data().messageToken)
+                                if(otherUserDoc.data().uid === newMessage.senderUid) {
+                                    //find and save the name of the sender
+                                    senderName = otherUserDoc.data().displayName
+                                } else {
+                                    //not the sender
+                                    if(!isBlockedBy(otherUserDoc.data(), newMessage.senderUid)) {  //dont send notification if the target blocked the message sender
+                                        if(otherUserDoc.data().messageToken !== '') {
+                                            otherUserTokens.push(otherUserDoc.data().messageToken)
+                                        }
                                     }
                                 }
                             })
@@ -110,7 +177,7 @@ exports.chatRoomNewMessage = functions
                                 otherUserTokens, //which users to send to
                                 chatRoomUid, //which chat room got the message
                                 chatRoom.chatRoomName, //name of the chat room
-                                newMessage.messageText //message text
+                                senderName + ': ' + newMessage.messageText //message text
                             )
 
                             return admin.messaging().sendMulticast(notification).then((response) => {
@@ -130,64 +197,65 @@ exports.chatRoomNewMessage = functions
         })
     });
 
-    //users list assumed to be 2 long
-    function getOtherUserUid(userUids, senderUid) {
-        if(userUids[0] === senderUid) {
-            return userUids[1]
-        } else {
-            return userUids[0]
-        }
+//users list assumed to be 2 long
+function getOtherUserUid(userUids, senderUid) {
+    if(userUids[0] === senderUid) {
+        return userUids[1]
+    } else {
+        return userUids[0]
     }
+}
 
-    function getOtherUserUids(userUids, senderUid) {
-        otherUserUids = []
-        for(const userUid of userUids) {
-            if(userUid === senderUid) {
-                //console.log('Not adding sender to the list: ' + senderUid)
-                continue
-            }
-            //console.log('Adding other user to the message list: ' + userUid)
-            otherUserUids.push(userUid)
+//Excludes second parameter from the list (first parameter)
+function getOtherUserUids(userUids, senderUid) {
+    otherUserUids = []
+    for(const userUid of userUids) {
+        if(userUid === senderUid) {
+            continue
         }
-        return otherUserUids
+        otherUserUids.push(userUid)
     }
+    return otherUserUids
+}
 
-    //check if user has otherUserUid blocked
-    function isBlockedBy(user, otherUserUid) {
-        for(blockedUserUid in user.blockedUsers) {
-            if(blockedUserUid === otherUserUid) {
-                return true
-            }
+//check if user has otherUserUid blocked
+function isBlockedBy(user, otherUserUid) {
+    for(const blockedUserUid of user.blockedUsers) {
+        if(blockedUserUid === otherUserUid) {
+            return true
         }
-        return false
     }
+    return false
+}
 
-    //Returns the notification that is sent with FCM to a message token
-    function buildNotificationForOneToOne(_token, _chatRoomUid, otherUserName, messageText) {
-        const message = {
-            notification: {
-                title: otherUserName,
-                body: messageText
-            },
-            data: {
-                chatRoomUid: _chatRoomUid
-            },
-            token: _token
-        }
-        return message
+//Returns the notification that is sent with FCM to a message token
+function buildNotificationForOneToOne(_token, _chatRoomUid, otherUserName, messageText) {
+    const message = {
+        notification: {
+            title: otherUserName,
+            body: messageText
+        },
+        data: {
+            chatRoomUid: _chatRoomUid,
+            messageType: "new_message"
+        },
+        token: _token
     }
+    return message
+}
 
-    //Returns the notification that is sent with FCM to a list of message tokens
-    function buildNotificationForGroup(_tokens, _chatRoomUid, chatRoomName, messageText) {
-        const message = {
-            notification: {
-                title: chatRoomName,
-                body: messageText
-            },
-            data: {
-                chatRoomUid: _chatRoomUid
-            },
-            tokens: _tokens
-        }
-        return message
+//Returns the notification that is sent with FCM to a list of message tokens
+function buildNotificationForGroup(_tokens, _chatRoomUid, chatRoomName, messageText) {
+    const message = {
+        notification: {
+            title: chatRoomName,
+            body: messageText
+        },
+        data: {
+            chatRoomUid: _chatRoomUid,
+            messageType: "new_message"
+        },
+        tokens: _tokens
     }
+    return message
+}

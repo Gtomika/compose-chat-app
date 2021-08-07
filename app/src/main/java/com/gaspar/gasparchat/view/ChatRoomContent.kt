@@ -1,5 +1,6 @@
 package com.gaspar.gasparchat.view
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -169,6 +170,7 @@ fun ColumnScope.ChatRoomBlockedWarning() {
 
 }
 
+@SuppressLint("UnrememberedMutableState")
 @ExperimentalAnimationApi
 @Composable
 fun MessagesContent(

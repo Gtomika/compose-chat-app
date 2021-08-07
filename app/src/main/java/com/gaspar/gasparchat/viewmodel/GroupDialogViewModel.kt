@@ -1,11 +1,9 @@
 package com.gaspar.gasparchat.viewmodel
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.gaspar.gasparchat.FriendsChangedEvent
-import com.gaspar.gasparchat.GroupLimits
-import com.gaspar.gasparchat.NameLimits
-import com.gaspar.gasparchat.R
+import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.model.User
 import com.gaspar.gasparchat.model.UserRepository
@@ -124,17 +122,19 @@ class GroupDialogViewModel @Inject constructor(
 
     fun onFriendSelected(position: Int) {
         _selectedUsers.value = selectedUsers.value + friendList.value[position].uid
+        Log.d(TAG, "Selected user UIDs: ${selectedUsers.value}")
         //is it valid after?
         _validGroupState.value =
-                    selectedUsers.value.size in 1..GroupLimits.MAX_MEMBERS
+                    selectedUsers.value.size in 2..GroupLimits.MAX_MEMBERS &&
                     !groupName.value.isError && groupName.value.input.isNotBlank()
     }
 
     fun onFriendUnselected(position: Int) {
         _selectedUsers.value = selectedUsers.value - friendList.value[position].uid
+        Log.d(TAG, "Selected user UIDs: ${selectedUsers.value}")
         //is it valid after?
         _validGroupState.value =
-            selectedUsers.value.size in 1..GroupLimits.MAX_MEMBERS
+            selectedUsers.value.size in 2..GroupLimits.MAX_MEMBERS &&
             !groupName.value.isError && groupName.value.input.isNotBlank()
     }
 }

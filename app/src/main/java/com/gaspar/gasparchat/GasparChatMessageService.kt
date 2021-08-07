@@ -1,5 +1,6 @@
 package com.gaspar.gasparchat
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
@@ -74,20 +75,30 @@ class GasparChatMessageService: FirebaseMessagingService() {
         // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
         Log.d(TAG, "FCM message arrived from: ${remoteMessage.from}")
         // Check if message contains a notification payload.
-        if(remoteMessage.notification != null && remoteMessage.notification!!.title != null &&
-            remoteMessage.notification!!.body != null && remoteMessage.data.containsKey("chatRoomUid")) {
+        if(
+            remoteMessage.notification != null &&
+            remoteMessage.notification!!.title != null &&
+            remoteMessage.notification!!.body != null &&
+            remoteMessage.data.containsKey("chatRoomUid") &&
+            remoteMessage.data.containsKey("messageType")
+        ) {
             //message contains all necessary field
             Log.d(TAG, "This FCM message is a notification message with chat room UID. Notification Body: ${remoteMessage.notification!!.body}")
+            Log.d(TAG, "This FCM message has data: ${remoteMessage.data}")
             //publish an event, received by the chat room view model
             val event = MessageReceivedEvent(
                 chatRoomUid = remoteMessage.data["chatRoomUid"]!!,
+                messageType = remoteMessage.data["messageType"]!!,
                 title = remoteMessage.notification!!.title!!,
                 text = remoteMessage.notification!!.body!!,
             )
-            EventBus.getDefault().post(event)
             //the view model will decide what to do with it
+            EventBus.getDefault().post(event)
+            //in case of new group create, refresh group list
+            if(remoteMessage.data["messageType"] == MessageType.NEW_GROUP) {
+                EventBus.getDefault().post(GroupsChangedEvent)
+            }
         }
-        remoteMessage.data
     }
 }
 
@@ -102,9 +113,10 @@ const val INTENT_CHAT_ROOM_ID = "intent_chat_room_id"
  * @param context Application context.
  * @param title Notification title.
  * @param text Notification text.
- * @param chatRoomUid UID of the chat room, used to generate notification ID.
+ * @param notificationId Notification ID.
  */
-fun buildNotification(context: Context, title: String, text: String, chatRoomUid: String) {
+@SuppressLint("UnspecifiedImmutableFlag")
+fun buildNotification(context: Context, title: String, text: String, notificationId: Int, chatRoomUid: String) {
     Log.d(TAG, "Displaying a notification with title $title and body $text!")
 
     //this intent will be delivered to the activity's onNewIntent
@@ -112,7 +124,8 @@ fun buildNotification(context: Context, title: String, text: String, chatRoomUid
         flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         putExtra(INTENT_CHAT_ROOM_ID, chatRoomUid)
     }
-    val pendingIntent = PendingIntent.getActivity(context, 0, intent, 0)
+    val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+    Log.d(TAG, "This notification will redirect to chat room $chatRoomUid")
 
     val color = ContextCompat.getColor(context, R.color.purple_500)
 
@@ -131,6 +144,33 @@ fun buildNotification(context: Context, title: String, text: String, chatRoomUid
 
     with(NotificationManagerCompat.from(context)) {
         //notification ID generated from chat room UID
-        notify(chatRoomUid.hashCode(), builder.build())
+        notify(notificationId, builder.build())
+    }
+}
+
+/**
+ * Incoming messages contain these types, the app can differentiate using these.
+ */
+object MessageType {
+
+    const val NEW_MESSAGE = "new_message"
+
+    const val NEW_GROUP = "new_group"
+
+    /**
+     * Converts incoming message types and chat room UIDs into notification IDs.
+     */
+    fun getIdForMessageType(type: String, chatRoomUid: String): Int {
+        return when (type) {
+            NEW_MESSAGE -> {
+                chatRoomUid.hashCode()
+            }
+            NEW_GROUP -> {
+                chatRoomUid.hashCode() + 1 //this notification will be separate from new message notification
+            }
+            else -> {
+                chatRoomUid.hashCode()
+            }
+        }
     }
 }

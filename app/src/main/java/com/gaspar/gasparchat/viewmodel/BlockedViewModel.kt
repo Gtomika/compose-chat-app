@@ -51,7 +51,7 @@ class BlockedViewModel @Inject constructor(
         getCurrentUserAndBlocks()
     }
 
-    fun getCurrentUserAndBlocks() {
+    private fun getCurrentUserAndBlocks() {
         _loading.value = true
         userRepository.getCurrentUser().addOnCompleteListener { currentUserResult ->
             if(currentUserResult.isSuccessful) {

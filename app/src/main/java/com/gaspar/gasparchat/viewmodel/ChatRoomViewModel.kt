@@ -120,6 +120,10 @@ class ChatRoomViewModel @Inject constructor(
         loadLocalUserAndAddChatRoom()
         //load all data about the chat room
         getChatRoomAndMembers(event.chatRoomId)
+        //navigate to chat room destination
+        navigationDispatcher.dispatchNavigationCommand { navController ->
+            navController.navigate(NavDest.CHAT_ROOM)
+        }
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -150,16 +154,19 @@ class ChatRoomViewModel @Inject constructor(
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onMessageReceived(event: MessageReceivedEvent) {
+        Log.d(TAG, "Message received event arrived for chat room ${event.chatRoomUid}")
         //only reload when chat room is VISIBLE and this chat room received message event.
         if(displaying && event.chatRoomUid == chatRoom.value.chatUid) {
             Log.d(TAG, "Displayed Chat Room received new message, reloading...")
             reloadMessages(event.chatRoomUid)
         } else {
+            val id = MessageType.getIdForMessageType(type = event.messageType, chatRoomUid = event.chatRoomUid)
             //a new message arrived, but view model is not showing, or it is for another chat room: PUSH notification
             buildNotification(
                 context = context,
                 title = event.title,
                 text = event.text,
+                notificationId = id,
                 chatRoomUid = event.chatRoomUid
             )
         }
@@ -189,7 +196,7 @@ class ChatRoomViewModel @Inject constructor(
      * While this is ongoing, the [loading] state will be set to true.
      */
     private fun getChatRoomAndMembers(chatRoomUid: String) {
-        Log.d(TAG, "Getting Chat Room Object, User objects and Message objects...")
+        Log.d(TAG, "Getting Chat Room Object, User objects and Message objects, chat room Uid: $chatRoomUid")
         val failMessage = context.getString(R.string.chat_load_fail)
         //get chat room
         val chatRoomTask = chatRoomRepository.getChatRoom(chatRoomUid)
@@ -484,8 +491,9 @@ object LoadingFinishedEvent
 /**
  * Sent when this chat room gets a new message.
  * @param chatRoomUid UID of the chat room which received message.
+ * @param messageType Determines what triggered the message (notification). One of [MessageType] constants.
  * @param title From the FCM message, a notification title.
  * @param text From the FCM message, a notification text.
  */
 @Keep
-class MessageReceivedEvent(val chatRoomUid: String, val title: String, val text: String)
+class MessageReceivedEvent(val chatRoomUid: String, val messageType: String, val title: String, val text: String)

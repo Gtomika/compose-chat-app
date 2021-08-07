@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.model.ChatRoom
+import com.gaspar.gasparchat.model.User
 import com.gaspar.gasparchat.viewmodel.ChatsViewModel
 
 @Composable
@@ -64,9 +65,11 @@ fun ChatsBody(viewModel: ChatsViewModel) {
                         onChatClicked = viewModel::onChatClicked
                     )
                 } else {
+                    //its possible that other users may not have loaded here
+                    val otherUser = otherUsers.value.getOrElse(position) { User() }
                     OneToOneChatCard(
                         position = position,
-                        otherUserName = otherUsers.value[position].displayName,
+                        otherUserName = otherUser.displayName,
                         lastMessageText = chat.lastMessageText!!,
                         onChatClicked = viewModel::onChatClicked
                     )
