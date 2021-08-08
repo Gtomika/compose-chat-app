@@ -50,6 +50,8 @@
     <string name="home_unblock_failed">Hiba a tiltás visszavonása közben.</string>
     <string name="home_unblock_success">Megszüntetted %1$s letiltását.</string>
     <string name="home_groups">Csoportok</string>
+    <string name="home_groups_admin_name">Admin: %1$s</string>
+    <string name="home_groups_member_count">%1$d résztvevő</string>
     <string name="home_groups_fail">Nem sikerült a csoportok betöltése!</string>
     <string name="home_no_groups">Nem vagy benne egy csoportban sem.</string>
 

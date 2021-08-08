@@ -12,11 +12,8 @@ import androidx.compose.material.Card
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -26,8 +23,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gaspar.gasparchat.R
-import com.gaspar.gasparchat.model.ChatRoom
-import com.gaspar.gasparchat.model.User
 import com.gaspar.gasparchat.viewmodel.ChatsViewModel
 
 @Composable
@@ -66,10 +61,14 @@ fun ChatsBody(viewModel: ChatsViewModel) {
                     )
                 } else {
                     //its possible that other users may not have loaded here
-                    val otherUser = otherUsers.value.getOrElse(position) { User() }
+                    val otherUserName = try {
+                        otherUsers.value[position].displayName
+                    } catch (e: Exception) {
+                        "..."
+                    }
                     OneToOneChatCard(
                         position = position,
-                        otherUserName = otherUser.displayName,
+                        otherUserName = otherUserName,
                         lastMessageText = chat.lastMessageText!!,
                         onChatClicked = viewModel::onChatClicked
                     )

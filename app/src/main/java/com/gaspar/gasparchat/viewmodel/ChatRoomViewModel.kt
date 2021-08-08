@@ -116,9 +116,9 @@ class ChatRoomViewModel @Inject constructor(
         loadingProcessAmount = 2
         //indicate loading (it will disappear once loading process amount resets to 0)
         _loading.value = true
-        //load current user
+        //load current user (async)
         loadLocalUserAndAddChatRoom()
-        //load all data about the chat room
+        //load all data about the chat room (async)
         getChatRoomAndMembers(event.chatRoomId)
         //navigate to chat room destination
         navigationDispatcher.dispatchNavigationCommand { navController ->
@@ -143,12 +143,14 @@ class ChatRoomViewModel @Inject constructor(
             }
             //get chat room top bar title
             _title.value = getChatRoomTitle()
+            //scroll to the bottom (NEEDS composable scope)
+            if(lazyColumnState != null) {
+                composableCoroutineScope?.launch {
+                    lazyColumnState?.animateScrollToItem(messages.value.size)
+                }
+            }
             //hide loading
             _loading.value = false
-            //scroll to the bottom (NEEDS composable scope)
-            composableCoroutineScope?.launch {
-                lazyColumnState?.animateScrollToItem(messages.value.size)
-            }
         }
     }
 

@@ -7,7 +7,23 @@ Using Firebase as a backend for authentication and storage.
 
 ## Screenshots
 
-**Coming soon.**
+<table>
+  <tr>
+    <td> <img src="screenshots/screenshot_login.png"  alt="1" width = 360px height = 640px ></td>
+
+    <td><img src="screenshots/screenshot_register.png" alt="2" width = 360px height = 640px></td>
+   </tr> 
+   <tr>
+      <td><img src="screenshots/screenshot_chats.png" alt="3" width = 360px height = 640px></td>
+
+      <td><img src="screenshots/screenshot_chat.png" align="right" alt="4" width = 360px height = 640px></td>
+  </tr>
+   <tr>
+      <td><img src="screenshots/screenshot_search.png" alt="5" width = 360px height = 640px></td>
+
+      <td><img src="screenshots/screenshot_profile.png" align="right" alt="6" width = 360px height = 640px></td>
+  </tr>
+</table>
 
 ## Not intended for Google Play Store
 

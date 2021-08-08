@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -43,22 +44,24 @@ import java.util.*
 fun ChatRoomContent(viewModel: ChatRoomViewModel) {
     //if this is composed, then chat room view model is displaying stuff
     viewModel.displaying = true
-
     val scaffoldState = rememberScaffoldState()
     val lazyColumnState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     viewModel.lazyColumnState = lazyColumnState
     viewModel.composableCoroutineScope = coroutineScope
-
-
+    val loading = viewModel.loading.collectAsState()
     Scaffold(
         scaffoldState = scaffoldState,
         topBar = { ChatRoomTopBar(viewModel) },
         bottomBar = { SendMessageContent(viewModel) }
     ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
+        Box(modifier = Modifier
+            .padding(paddingValues)
+            .alpha(if(loading.value) 0.3f else 1.0f))
+        {
             ChatRoomBody(viewModel = viewModel, lazyColumnState)
         }
+        LoadingIndicator(loadingFlow = viewModel.loading)
     }
     //watch for snackbar
     WatchForSnackbar(snackbarDispatcher = viewModel.snackbarDispatcher, snackbarHostState = scaffoldState.snackbarHostState)

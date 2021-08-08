@@ -17,6 +17,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gaspar.gasparchat.R
@@ -25,6 +26,7 @@ import com.gaspar.gasparchat.viewmodel.GroupsViewModel
 import com.gaspar.gasparchat.viewmodel.VoidMethod
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.lang.Exception
 
 
 @ExperimentalComposeUiApi
@@ -77,13 +79,23 @@ fun GroupDialogFloatingActionButton(onClick: VoidMethod) {
 fun GroupsBody(viewModel: GroupsViewModel) {
     val groups = viewModel.groups.collectAsState()
     val loading = viewModel.loading.collectAsState()
+    val admins = viewModel.admins.collectAsState()
+
     if(groups.value.isNotEmpty() && !loading.value) {
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
             itemsIndexed(groups.value) { position, group ->
+                val adminName = try {
+                    admins.value[position].displayName
+                } catch (e: Exception) {
+                    "..."
+                }
+                val memberCount = group.chatRoomUsers.size
                 GroupCard(
                     position = position,
                     group = group,
-                    onGroupClicked = viewModel::onGroupClicked
+                    onGroupClicked = viewModel::onGroupClicked,
+                    adminName = adminName,
+                    memberCount = memberCount
                 )
             }
         }
@@ -105,6 +117,8 @@ fun GroupCard(
     position: Int,
     group: ChatRoom,
     onGroupClicked: (Int) -> Unit,
+    adminName: String,
+    memberCount: Int
 ) {
     Card(
         modifier = Modifier
@@ -112,11 +126,11 @@ fun GroupCard(
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clickable { onGroupClicked.invoke(position) }
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            //first row: name and image
             Row(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.align(Alignment.CenterStart)
             ) {
                 //TODO: when implemented, this can be replaced with group picture
                 Icon(
@@ -127,9 +141,28 @@ fun GroupCard(
                 Text(
                     text = group.chatRoomName,
                     style = MaterialTheme.typography.subtitle1,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    fontWeight = FontWeight.Bold
                 )
             }
+            //second row: name of admin
+            Text(
+                text = stringResource(id = R.string.home_groups_admin_name, formatArgs = arrayOf(adminName)),
+                style = MaterialTheme.typography.body1,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .fillMaxWidth(),
+                textAlign = TextAlign.Start
+            )
+            //third row: members count
+            Text(
+                text = stringResource(id = R.string.home_groups_member_count, formatArgs = arrayOf(memberCount)),
+                style = MaterialTheme.typography.body1,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .fillMaxWidth(),
+                textAlign = TextAlign.Start
+            )
         }
     }
 }
