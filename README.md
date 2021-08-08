@@ -7,21 +7,21 @@ Using Firebase as a backend for authentication and storage.
 
 ## Screenshots
 
-<table>
+<table style="padding:10px">
   <tr>
-    <td> <img src="screenshots/screenshot_login.png"  alt="1" width = 360px height = 640px ></td>
+    <td> <img src="screenshots/screenshot_login.png"  alt="1" width = 240px height = 512px ></td>
 
-    <td><img src="screenshots/screenshot_register.png" alt="2" width = 360px height = 640px></td>
+    <td><img src="screenshots/screenshot_register.png" alt="2" width = 240px height = 512px></td>
    </tr> 
    <tr>
-      <td><img src="screenshots/screenshot_chats.png" alt="3" width = 360px height = 640px></td>
+      <td><img src="screenshots/screenshot_chats.png" alt="3" width = 240px height = 512px></td>
 
-      <td><img src="screenshots/screenshot_chat.png" align="right" alt="4" width = 360px height = 640px></td>
+      <td><img src="screenshots/screenshot_chat.png" alt="4" width = 240px height = 512px></td>
   </tr>
    <tr>
-      <td><img src="screenshots/screenshot_search.png" alt="5" width = 360px height = 640px></td>
+      <td><img src="screenshots/screenshot_search.png" alt="5" width = 240px height = 512px></td>
 
-      <td><img src="screenshots/screenshot_profile.png" align="right" alt="6" width = 360px height = 640px></td>
+      <td><img src="screenshots/screenshot_profile.png" alt="6" width = 240px height = 512px></td>
   </tr>
 </table>
 
