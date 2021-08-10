@@ -45,10 +45,7 @@ fun ChatsContent(
 
 @Composable
 fun ChatsBody(viewModel: ChatsViewModel) {
-
     val chats = viewModel.chats.collectAsState()
-    val otherUsers = viewModel.otherUsers.collectAsState()
-
     if(chats.value.isNotEmpty()) {
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
             itemsIndexed(chats.value) { position, chat ->
@@ -60,15 +57,9 @@ fun ChatsBody(viewModel: ChatsViewModel) {
                         onChatClicked = viewModel::onChatClicked
                     )
                 } else {
-                    //its possible that other users may not have loaded here
-                    val otherUserName = try {
-                        otherUsers.value[position].displayName
-                    } catch (e: Exception) {
-                        "..."
-                    }
                     OneToOneChatCard(
                         position = position,
-                        otherUserName = otherUserName,
+                        otherUserName = chat.displayUserName,
                         lastMessageText = chat.lastMessageText!!,
                         onChatClicked = viewModel::onChatClicked
                     )
@@ -183,7 +174,6 @@ fun OneToOneChatCard(
                     text = stringResource(id = R.string.home_last_message),
                     style = MaterialTheme.typography.body2,
                     maxLines = 1,
-                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(start = 16.dp)
                 )
                 //displays last message

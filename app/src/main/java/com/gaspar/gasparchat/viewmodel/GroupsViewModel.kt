@@ -4,10 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.gaspar.gasparchat.*
-import com.gaspar.gasparchat.model.ChatRoom
-import com.gaspar.gasparchat.model.ChatRoomRepository
-import com.gaspar.gasparchat.model.User
-import com.gaspar.gasparchat.model.UserRepository
+import com.gaspar.gasparchat.model.*
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -39,14 +36,8 @@ class GroupsViewModel @Inject constructor(
     /**
      * Groups of the user.
      */
-    private val _groups = MutableStateFlow(listOf<ChatRoom>())
-    val groups: StateFlow<List<ChatRoom>> = _groups
-
-    /**
-     * Admins of the groups.
-     */
-    private val _admins = MutableStateFlow(listOf<User>())
-    val admins: StateFlow<List<User>> = _admins
+    private val _groups = MutableStateFlow(listOf<DisplayChatRoom>())
+    val groups: StateFlow<List<DisplayChatRoom>> = _groups
 
     init {
         EventBus.getDefault().register(this)
@@ -76,27 +67,39 @@ class GroupsViewModel @Inject constructor(
                 for(group in groupsSorted) {
                     adminUIDs.add(group.admin!!)
                 }
-                //get admins
-                userRepository.getUsersByUid(adminUIDs).addOnCompleteListener { adminsResult ->
-                    if(adminsResult.isSuccessful && adminsResult.result != null) {
-                        Log.d(TAG, "Queried groups and group admins!")
-                        //assign admins
-                        _admins.value = adminsResult.result!!.toObjects(User::class.java)
-                        //assign groups
-                        _groups.value = groupsSorted
-                    } else {
-                        val message = context.getString(R.string.home_groups_fail)
-                        snackbarDispatcher.createOnlyMessageSnackbar(message)
-                        snackbarDispatcher.showSnackbar()
+                //admins may have REPETITIONS, get the individually
+                var queryCounter = 0
+                var queryFailCounter = 0
+                val admins = mutableListOf<User>()
+                for(adminUid in adminUIDs) {
+                    userRepository.getUserById(adminUid).addOnCompleteListener { adminResult ->
+                        queryCounter++
+                        if(adminResult.isSuccessful && adminResult.result != null) {
+                            admins.add(adminResult.result!!.toObject(User::class.java)!!)
+                            if(queryCounter == adminUIDs.size) {
+                                //all admins have been queried, but maybe some failed
+                                if(queryFailCounter > 0) {
+                                    _loading.value = false
+                                    val message = context.getString(R.string.home_groups_fail)
+                                    snackbarDispatcher.createOnlyMessageSnackbar(message)
+                                    snackbarDispatcher.showSnackbar()
+                                } else {
+                                    //no fails, create DisplayChatRoom objects
+                                    _groups.value = mergeChatRoomsAndUsers(groupsSorted, admins)
+                                    _loading.value = false
+                                }
+                            }
+                        } else {
+                            queryFailCounter++
+                        }
                     }
                 }
-
             } else {
+                _loading.value = false
                 val message = context.getString(R.string.home_groups_fail)
                 snackbarDispatcher.createOnlyMessageSnackbar(message)
                 snackbarDispatcher.showSnackbar()
             }
-            _loading.value = false
         }
     }
 

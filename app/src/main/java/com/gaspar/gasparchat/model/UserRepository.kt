@@ -6,8 +6,10 @@ import androidx.annotation.Nullable
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.viewmodel.VoidMethod
 import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -233,14 +235,28 @@ class UserRepository @Inject constructor(
     }
 
     /**
-     * Finds [User] objects from firestore.
+     * Finds [User] objects from firestore. Only use this if [userUidList] doesn't have repetitions!!! If it
+     * does, use separate [getUserById] calls!
      * @param userUidList The uid-s of the users.
      * @return Async [Task].
      */
     fun getUsersByUid(userUidList: List<String>): Task<QuerySnapshot> {
+        // THIS DOES NOT WORK because of repetitions.
         return firestore
             .collection(FirestoreConstants.USER_COLLECTION)
             .whereIn(FirestoreConstants.USER_UID, userUidList)
+            .get()
+    }
+
+    /**
+     * Gets a [User] object.
+     * @param userUid The UID of the user.
+     * @return Async [Task].
+     */
+    fun getUserById(userUid: String): Task<DocumentSnapshot> {
+        return firestore
+            .collection(FirestoreConstants.USER_COLLECTION)
+            .document(userUid)
             .get()
     }
 

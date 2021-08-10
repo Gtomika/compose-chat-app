@@ -30,6 +30,7 @@ import com.gaspar.gasparchat.viewmodel.RegisterViewModel
 import com.gaspar.gasparchat.viewmodel.SearchViewModel
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
+import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
 import org.greenrobot.eventbus.EventBus

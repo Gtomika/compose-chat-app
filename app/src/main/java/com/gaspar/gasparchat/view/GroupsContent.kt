@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -21,13 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gaspar.gasparchat.R
-import com.gaspar.gasparchat.model.ChatRoom
+import com.gaspar.gasparchat.model.DisplayChatRoom
 import com.gaspar.gasparchat.viewmodel.GroupsViewModel
 import com.gaspar.gasparchat.viewmodel.VoidMethod
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-import java.lang.Exception
-
 
 @ExperimentalComposeUiApi
 @ExperimentalAnimationApi
@@ -79,23 +74,14 @@ fun GroupDialogFloatingActionButton(onClick: VoidMethod) {
 fun GroupsBody(viewModel: GroupsViewModel) {
     val groups = viewModel.groups.collectAsState()
     val loading = viewModel.loading.collectAsState()
-    val admins = viewModel.admins.collectAsState()
 
     if(groups.value.isNotEmpty() && !loading.value) {
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
             itemsIndexed(groups.value) { position, group ->
-                val adminName = try {
-                    admins.value[position].displayName
-                } catch (e: Exception) {
-                    "..."
-                }
-                val memberCount = group.chatRoomUsers.size
                 GroupCard(
                     position = position,
                     group = group,
                     onGroupClicked = viewModel::onGroupClicked,
-                    adminName = adminName,
-                    memberCount = memberCount
                 )
             }
         }
@@ -115,10 +101,8 @@ fun GroupsBody(viewModel: GroupsViewModel) {
 @Composable
 fun GroupCard(
     position: Int,
-    group: ChatRoom,
+    group: DisplayChatRoom,
     onGroupClicked: (Int) -> Unit,
-    adminName: String,
-    memberCount: Int
 ) {
     Card(
         modifier = Modifier
@@ -147,7 +131,7 @@ fun GroupCard(
             }
             //second row: name of admin
             Text(
-                text = stringResource(id = R.string.home_groups_admin_name, formatArgs = arrayOf(adminName)),
+                text = stringResource(id = R.string.home_groups_admin_name, formatArgs = arrayOf(group.displayUserName)),
                 style = MaterialTheme.typography.body1,
                 modifier = Modifier
                     .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -156,7 +140,7 @@ fun GroupCard(
             )
             //third row: members count
             Text(
-                text = stringResource(id = R.string.home_groups_member_count, formatArgs = arrayOf(memberCount)),
+                text = stringResource(id = R.string.home_groups_member_count, formatArgs = arrayOf(group.memberCount)),
                 style = MaterialTheme.typography.body1,
                 modifier = Modifier
                     .padding(horizontal = 16.dp, vertical = 8.dp)

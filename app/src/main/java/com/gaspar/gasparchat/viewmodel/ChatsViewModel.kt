@@ -4,10 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.gaspar.gasparchat.*
-import com.gaspar.gasparchat.model.ChatRoom
-import com.gaspar.gasparchat.model.ChatRoomRepository
-import com.gaspar.gasparchat.model.User
-import com.gaspar.gasparchat.model.UserRepository
+import com.gaspar.gasparchat.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +20,6 @@ class ChatsViewModel @Inject constructor(
     private val userRepository: UserRepository,
     @ApplicationContext private val context: Context,
     private val chatRoomRepository: ChatRoomRepository,
-    private val navigationDispatcher: NavigationDispatcher
 ): ViewModel() {
 
     private val _loading = MutableStateFlow(false)
@@ -36,18 +32,11 @@ class ChatsViewModel @Inject constructor(
     val currentUser: StateFlow<User> = _currentUser
 
     /**
-     * All [ChatRoom]s which the [currentUser] is participating in. All of these
-     * have at least one message.
+     * All [ChatRoom]s which the [currentUser] is participating in, as [DisplayChatRoom] objects.
+     * All of these have at least one message.
      */
-    private val _chats = MutableStateFlow(listOf<ChatRoom>())
-    val chats: StateFlow<List<ChatRoom>> = _chats
-
-    /**
-     * A user from each [chats], who is not the [currentUser]. These [User]s are used to
-     * get title and image for one-to-one conversations.
-     */
-    private val _otherUsers = MutableStateFlow(listOf<User>())
-    val otherUsers: StateFlow<List<User>> = _otherUsers
+    private val _chats = MutableStateFlow(listOf<DisplayChatRoom>())
+    val chats: StateFlow<List<DisplayChatRoom>> = _chats
 
     init {
         EventBus.getDefault().register(this)
@@ -80,20 +69,31 @@ class ChatsViewModel @Inject constructor(
                         val rawData = chatsResult.result!!.toObjects(ChatRoom::class.java)
                         val chats = sortChatRoomsByActivity(rawData)
                         //now get other user UIDs
-                        val otherUsers = getOtherUsers(chats)
-                        if(otherUsers.isNotEmpty()) {
-                            userRepository.getUsersByUid(otherUsers).addOnCompleteListener { otherUserResult ->
-                                if(otherUserResult.isSuccessful && otherUserResult.result != null) {
-                                    //for each chat we now have a non local user
-                                    _otherUsers.value = otherUserResult.result!!.toObjects(User::class.java)
+                        val otherUsersIds = getOtherUsers(chats)
+                        //other users may have repetition, must query individually
+                        var queryCounter = 0
+                        var queryFailCounter = 0
+                        val otherUsers = mutableListOf<User>()
+                        for(otherUserUid in otherUsersIds) {
+                            userRepository.getUserById(otherUserUid).addOnCompleteListener { userResult ->
+                                queryCounter++
+                                if(userResult.isSuccessful && userResult.result != null) {
+                                    otherUsers.add(userResult.result!!.toObject(User::class.java)!!)
+                                    if(queryCounter == otherUsers.size) {
+                                        //all users have been queried, but maybe some failed
+                                        if(queryFailCounter > 0) {
+                                            _loading.value = false
+                                            showChatLoadingErrorSnackbar()
+                                        } else {
+                                            //no fails, create DisplayChatRoom objects
+                                            _chats.value = mergeChatRoomsAndUsers(chats, otherUsers)
+                                            _loading.value = false
+                                        }
+                                    }
                                 } else {
-                                    showChatLoadingErrorSnackbar()
+                                    queryFailCounter++
                                 }
-                                _chats.value = chats
-                                _loading.value = false
                             }
-                        } else {
-                            _loading.value = false
                         }
                     } else {
                         _loading.value = false

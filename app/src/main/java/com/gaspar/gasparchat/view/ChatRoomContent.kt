@@ -287,7 +287,6 @@ fun MessageContent(
                 //message surface
                 Surface(
                     modifier = Modifier
-                        .wrapContentWidth()
                         .align(Alignment.Start)
                         .clickable { showActions.value = true },
                     shape = RoundedCornerShape(size = 8.dp),
@@ -319,7 +318,7 @@ fun MessageContent(
                     text = formattedSendTime,
                     style = MaterialTheme.typography.overline,
                     modifier = Modifier
-                        .align(Alignment.End)
+                        .align(Alignment.Start)
                         .padding(top = 2.dp)
                 )
             }
@@ -367,7 +366,10 @@ fun LocalMessageContent(
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.End,
         ) {
-            Column(verticalArrangement = Arrangement.Top) {
+            Column(
+                verticalArrangement = Arrangement.Top,
+                modifier = Modifier.weight(0.9f)
+            ) {
                 //display name of sender
                 Text(
                     text = senderDisplayName,
@@ -379,7 +381,6 @@ fun LocalMessageContent(
                 //message surface
                 Surface(
                     modifier = Modifier
-                        .wrapContentWidth()
                         .align(Alignment.End)
                         .clickable { showActions.value = true },
                     shape = RoundedCornerShape(size = 8.dp),
@@ -413,7 +414,7 @@ fun LocalMessageContent(
                     text = formattedSendTime,
                     style = MaterialTheme.typography.overline,
                     modifier = Modifier
-                        .align(Alignment.Start)
+                        .align(Alignment.End)
                         .padding(top = 2.dp)
                 )
             }
@@ -422,6 +423,7 @@ fun LocalMessageContent(
                 imageVector = Icons.Default.Person,
                 contentDescription = stringResource(id = R.string.chat_profile_picture),
                 modifier = Modifier.padding(top = 16.dp, start = 8.dp)
+                    .weight(0.1f)
             )
         }
     }
