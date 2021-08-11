@@ -1,6 +1,7 @@
 package com.gaspar.gasparchat.viewmodel
 
 import android.content.Context
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.lifecycle.ViewModel
 import com.gaspar.gasparchat.NavDest
 import com.gaspar.gasparchat.NavigationDispatcher

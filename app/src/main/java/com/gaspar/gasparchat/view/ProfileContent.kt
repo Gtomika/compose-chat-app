@@ -148,7 +148,7 @@ fun ProfileBody(
 ) {
     val scrollState = rememberScrollState()
     val loading = viewModel.loading.collectAsState()
-    Column( //not many composables here, no need for a lazy column
+    Column( //not many composable here, no need for a lazy column
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
@@ -163,6 +163,7 @@ fun ProfileBody(
             onUpdateDisplayName = viewModel::onUpdateDisplayName,
             onShowInfoCheckedChanged = viewModel::onShowDisplayNameInfoCheckedChanged
         )
+        UpdatePictureContent() //uses its own view model
         UpdatePasswordContent(viewModel = viewModel)
         DeleteAccountContent(onDeleteButtonClicked = viewModel::displayDeleteAuthenticateDialog)
     }

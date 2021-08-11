@@ -20,6 +20,7 @@
     <string name="login_cannot_be_empty">Nem lehet üres!</string>
     <string name="login_fail">Sikertelen bejelentkezés!</string>
     <string name="login_invalid_data_label">Hibás email vagy jelszó!</string>
+    <string name="login_version_info">Verzió: %1$s (kód: %2$d)</string>
 
     <string name="register_prompt">Regisztálj fiókot!</string>
     <string name="register_username">Felhasználónév (nem kötelező)</string>
@@ -84,6 +85,10 @@
     <string name="profile_delete_account">A fiókod törlése.</string>
     <string name="profile_delete">Törlés</string>
     <string name="profile_delete_account_fail">A törlés sikertelen volt!</string>
+    <string name="profile_update_picture">Profilkép megváltoztatása</string>
+    <string name="profile_update_picture_preview">Így fog látni a többi felhasználó:</string>
+    <string name="profile_update_picture_select">Kép választása</string>
+    <string name="profile_update_picture_capture">Új fotó</string>
 
     <string name="authenticate_dialog_title">Megerősítés</string>
     <string name="authenticate_dialog_cancel">Mégse</string>

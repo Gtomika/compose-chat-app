@@ -11,7 +11,6 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -25,13 +24,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.gaspar.gasparchat.BuildConfig
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.WatchForSnackbar
 import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.viewmodel.LoginViewModel
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 
 @ExperimentalAnimationApi
 @ExperimentalComposeUiApi
@@ -46,11 +44,25 @@ fun LoginContent(
             Box(modifier = Modifier.fillMaxSize()) {
                 LoadingIndicator(viewModel.loading)
                 LoginBox(viewModel = viewModel)
+                VersionCode()
             }
         }
     )
     //watch for snackbar
     WatchForSnackbar(snackbarDispatcher = viewModel.snackbarDispatcher, snackbarHostState = scaffoldState.snackbarHostState)
+}
+
+@Composable
+fun BoxScope.VersionCode() {
+    val versionCode = BuildConfig.VERSION_CODE
+    val versionName = BuildConfig.VERSION_NAME
+    Text(
+        text = stringResource(id = R.string.login_version_info,
+            formatArgs = arrayOf(versionName, versionCode)),
+        style = MaterialTheme.typography.subtitle1,
+        modifier = Modifier.align(Alignment.TopCenter)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    )
 }
 
 @ExperimentalComposeUiApi
@@ -60,8 +72,9 @@ fun LoginBox(
 ) {
     val loading = viewModel.loading.collectAsState()
     Column(
-        modifier = Modifier.fillMaxSize()
-            .alpha(if(loading.value) 0.5f else 1f),
+        modifier = Modifier
+            .fillMaxSize()
+            .alpha(if (loading.value) 0.5f else 1f),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -80,8 +93,12 @@ fun LoginBox(
             focusRequester = focusRequester2
         )
         val errorsPresent = viewModel.errorsPresent.collectAsState()
+        val controller = LocalSoftwareKeyboardController.current
         Button(
-            onClick = viewModel::onLoginButtonClicked,
+            onClick = {
+                controller?.hide()
+                viewModel.onLoginButtonClicked()
+            },
             content = { Text(stringResource(id = R.string.login)) },
             modifier = Modifier.padding(8.dp),
             enabled = !errorsPresent.value

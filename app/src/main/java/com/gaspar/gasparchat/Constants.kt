@@ -136,6 +136,12 @@ object FirestoreConstants {
     const val MESSAGE_DELETED = "deleted"
 }
 
+object PictureConstants {
+
+    const val PROFILE_PICTURE_SIZE = 75
+
+}
+
 /**
  * Message type that is fired when a component signals that the block list has updated.
  */

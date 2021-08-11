@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -24,19 +25,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.gaspar.gasparchat.ui.theme.GasparChatTheme
 import com.gaspar.gasparchat.view.*
-import com.gaspar.gasparchat.viewmodel.ChatRoomViewModel
-import com.gaspar.gasparchat.viewmodel.LoginViewModel
-import com.gaspar.gasparchat.viewmodel.RegisterViewModel
-import com.gaspar.gasparchat.viewmodel.SearchViewModel
+import com.gaspar.gasparchat.viewmodel.*
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
-import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
 import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import javax.inject.Inject
 
-
+/**
+ * The single activity of the application.
+ */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
@@ -53,6 +54,8 @@ class MainActivity : ComponentActivity() {
     @ExperimentalAnimationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        //register for events
+        EventBus.getDefault().register(this)
         //set lifecycle
         activityLifecycle = this
         //check for google play services
@@ -85,8 +88,12 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         activityLifecycle = null
+        EventBus.getDefault().unregister(this)
     }
 
+    /**
+     * Creates notification channel that the app uses for push notifications.
+     */
     private fun createNotificationChannel() {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
@@ -110,6 +117,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Checks for google play services.
+     * @return True only if the GPS are available.
+     */
     private fun isGooglePlayServicesAvailable(activity: Activity?): Boolean {
         val googleApiAvailability = GoogleApiAvailability.getInstance()
         val status = googleApiAvailability.isGooglePlayServicesAvailable(activity)
@@ -122,6 +133,9 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
+    /**
+     * On startup, logs the firebase cloud message token of the device.
+     */
     private fun logFirebaseMessagingToken() {
         firebaseMessaging.token.addOnCompleteListener { task ->
             if (!task.isSuccessful) {
@@ -152,6 +166,37 @@ class MainActivity : ComponentActivity() {
         } else {
             Log.d(TAG, "onNewIntent called without tag or extras. Ignoring...")
         }
+    }
+
+    /**
+     * Points to selected images.
+     */
+    var tempUri: Uri? = null
+
+    /**
+     * Register the contract that opens gallery.
+     */
+    val galleryResultContract = registerGalleryResultContract(this)
+
+    /**
+     * Called when the activity should open a gallery for image selection.
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onMessageEvent(event: OpenGalleryEvent) {
+        openGallery(this)
+    }
+
+    /**
+     * Register the contract that opens camera
+     */
+    val cameraResultContract = registerCameraResultContract(this)
+
+    /**
+     * Called when the activity should open a camera for image capture.
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onMessageEvent(event: OpenCameraEvent) {
+        openCamera(this)
     }
 }
 

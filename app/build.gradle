@@ -14,8 +14,8 @@ android {
         applicationId "com.gaspar.gasparchat"
         minSdk 21
         targetSdk 30
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.0.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -64,8 +64,10 @@ dependencies {
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.firebase:firebase-firestore-ktx'
     implementation 'com.google.firebase:firebase-messaging'
+    implementation 'com.google.firebase:firebase-storage-ktx'
 
     implementation "com.google.dagger:hilt-android:$hilt_version"
+    implementation 'androidx.exifinterface:exifinterface:1.3.3'
     kapt "com.google.dagger:hilt-compiler:$hilt_version"
     implementation "androidx.hilt:hilt-navigation-compose:1.0.0-alpha03"
 
