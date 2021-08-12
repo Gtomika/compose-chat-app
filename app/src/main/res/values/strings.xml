@@ -89,6 +89,11 @@
     <string name="profile_update_picture_preview">Így fog látni a többi felhasználó:</string>
     <string name="profile_update_picture_select">Kép választása</string>
     <string name="profile_update_picture_capture">Új fotó</string>
+    <string name="profile_update_picture_success">A profilképed megváltozott!</string>
+    <string name="profile_update_picture_fail">Hiba: nem sikerült a profilkép frissítés.</string>
+    <string name="profile_picture_deleted">A profilképed törölve lett.</string>
+    <string name="profile_picture_delete">Profilkép (vagy előnézet) törlése</string>
+    <string name="profile_picture_load_fail">Hiba: nem sikerült a profilkép betöltése.</string>
 
     <string name="authenticate_dialog_title">Megerősítés</string>
     <string name="authenticate_dialog_cancel">Mégse</string>

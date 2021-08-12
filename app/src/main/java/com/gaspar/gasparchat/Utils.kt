@@ -4,8 +4,12 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import androidx.annotation.WorkerThread
 import androidx.exifinterface.media.ExifInterface
+import com.gaspar.gasparchat.viewmodel.VoidMethod
 
 /**
  * Rotates a bitmap if its rotation is not 0. The rotation is info is read from URI. The
@@ -50,4 +54,14 @@ private fun rotateImage(source: Bitmap, angle: Float): Bitmap {
         source, 0, 0, source.width, source.height,
         matrix, true
     )
+}
+
+/**
+ * Utility method to run code on UI thread from worker threads.
+ */
+@WorkerThread
+fun postToUiThread(runnable: VoidMethod) {
+    Handler(Looper.getMainLooper()).post {
+        runnable.invoke()
+    }
 }

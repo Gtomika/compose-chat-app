@@ -1,7 +1,6 @@
 package com.gaspar.gasparchat.view
 
 import androidx.compose.animation.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -14,7 +13,6 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -33,8 +31,6 @@ import com.gaspar.gasparchat.model.InputField
 import com.gaspar.gasparchat.viewmodel.ProfileViewModel
 import com.gaspar.gasparchat.viewmodel.VoidMethod
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 
 @ExperimentalComposeUiApi
 @ExperimentalAnimationApi

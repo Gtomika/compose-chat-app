@@ -140,6 +140,27 @@ object PictureConstants {
 
     const val PROFILE_PICTURE_SIZE = 75
 
+    const val PROFILE_PICTURES_FOLDER = "profilePictures"
+
+    /**
+     * A percentage, which defines the compress amount, and thus the quality of the compressed
+     * picture. The higher this is, the better the quality will be.
+     */
+    const val PICTURE_COMPRESS_RATIO = 100
+
+    const val CACHED_PROFILE_PICTURE_TABLE = "cached_profile_pictures"
+
+    const val CACHED_PROFILE_PICTURE_ID = "user_id"
+
+    const val CACHED_PICTURE_VALIDATE_TIMESTAMP = "validate_timestamp"
+
+    const val CACHED_PICTURE_IMAGE_DATA = "image_data"
+
+    /**
+     * The maximum mount of images (of a category, for example profile pictures) that will be cached.
+     * Replacement strategy is used is a new image is attempted to be cached over this limit.
+     */
+    const val MAX_CACHED_PICTURES = 10
 }
 
 /**
