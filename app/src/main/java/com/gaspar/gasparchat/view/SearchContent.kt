@@ -1,5 +1,6 @@
 package com.gaspar.gasparchat.view
 
+import android.graphics.Bitmap
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,7 +12,6 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,8 +34,6 @@ import com.gaspar.gasparchat.viewmodel.SearchViewModel
 import com.gaspar.gasparchat.viewmodel.StringMethod
 import com.gaspar.gasparchat.viewmodel.VoidMethod
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 
 @ExperimentalComposeUiApi
 @ExperimentalAnimationApi
@@ -74,6 +72,7 @@ fun SearchTopBar(onBackClicked: VoidMethod) {
 @ExperimentalComposeUiApi
 @Composable
 fun SearchBody(viewModel: SearchViewModel) {
+    val loading = viewModel.loading.collectAsState()
     Column( //this is NOT the scrollable column
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Top,
@@ -85,12 +84,13 @@ fun SearchBody(viewModel: SearchViewModel) {
             onSearchBarValueChanged = viewModel::onSearchBarValueChanged
         )
         val searchResult = viewModel.searchResults.collectAsState()
-        if(searchResult.value.isNotEmpty()) {
+        if(searchResult.value.isNotEmpty() && !loading.value) {
             //there are results to be displayed
             LazyColumn {
                 itemsIndexed(searchResult.value) { position: Int, user: User ->
                     val isContact = remember(user) { mutableStateOf(isFriendOf(viewModel.localUser!!, user)) }
                     val isBlocked = remember(user) { mutableStateOf(isBlockedBy(viewModel.localUser!!, user.uid)) }
+                    val displayUser = remember(user) { mutableStateOf(viewModel.getDisplayUser(user)) }
                     SearchResultContent(
                         user = user,
                         position = position,
@@ -98,7 +98,8 @@ fun SearchBody(viewModel: SearchViewModel) {
                         onAddAsContactClicked = viewModel::onAddAsContactClicked,
                         onBlockClicked = viewModel::onBlockUserClicked,
                         isContact = isContact,
-                        isBlocked = isBlocked
+                        isBlocked = isBlocked,
+                        profilePicture = displayUser.value?.profilePicture
                     )
                 }
             }
@@ -163,7 +164,8 @@ fun SearchResultContent(
     onAddAsContactClicked: (Int, MutableState<Boolean>) -> Unit,
     onBlockClicked: (Int, MutableState<Boolean>) -> Unit,
     isContact: MutableState<Boolean>,
-    isBlocked: MutableState<Boolean>
+    isBlocked: MutableState<Boolean>,
+    profilePicture: Bitmap?
 ) {
     Card(
         modifier = Modifier
@@ -177,12 +179,13 @@ fun SearchResultContent(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.align(Alignment.CenterStart)
             ) {
-                //TODO: when implemented, this can be replaced with profile picture
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = stringResource(id = R.string.search_profile_image_description, formatArgs = arrayOf(user.displayName)),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    if(profilePicture != null) {
+                        ProfilePicture(picture = profilePicture, displayName = user.displayName)
+                    } else {
+                        DefaultProfilePicture(displayName = user.displayName)
+                    }
+                }
                 Text(
                     text = user.displayName,
                     style = MaterialTheme.typography.subtitle1,

@@ -6,10 +6,7 @@ import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.lifecycle.ViewModel
 import com.gaspar.gasparchat.*
-import com.gaspar.gasparchat.model.ChatRoomRepository
-import com.gaspar.gasparchat.model.InputField
-import com.gaspar.gasparchat.model.User
-import com.gaspar.gasparchat.model.UserRepository
+import com.gaspar.gasparchat.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +20,8 @@ class SearchViewModel @Inject constructor(
     val snackbarDispatcher: SnackbarDispatcher,
     private val userRepository: UserRepository,
     private val chatRoomRepository: ChatRoomRepository,
-    @ApplicationContext private val application: Context
+    @ApplicationContext private val application: Context,
+    private val pictureRepository: PictureRepository
 ): ViewModel() {
 
     private val _loading = MutableStateFlow(false)
@@ -40,6 +38,12 @@ class SearchViewModel @Inject constructor(
      */
     private val _searchResults = MutableStateFlow<List<User>>(listOf())
     val searchResults: StateFlow<List<User>> = _searchResults
+
+    /**
+     * Contains all information to display the [User]s of [searchResults].
+     */
+    private val _displaySearchResults = MutableStateFlow<List<DisplayUser>>(listOf())
+    val displaySearchResults: StateFlow<List<DisplayUser>> = _displaySearchResults
 
     /**
      * This timer watches when the user stopped typing.
@@ -138,13 +142,22 @@ class SearchViewModel @Inject constructor(
                                     matchingUsers.add(user)
                                 }
                             }
-                            //update list
+                            //update list of users
                             _searchResults.value = matchingUsers.toList()
+                            //create display users
+                            createDisplayUsers(
+                                pictureRepository = pictureRepository,
+                                users = searchResults.value,
+                                onCompletion = { displayUsers: List<DisplayUser> ->
+                                    _displaySearchResults.value = displayUsers
+                                    _loading.value = false
+                                }
+                            )
                         } else {
                             //some reason it could not be parsed
+                            _loading.value = false
                             _searchResults.value = listOf() //this will display the no results text
                         }
-                        _loading.value = false
                     } else {
                         //result is null for some reason
                         _searchResults.value = listOf() //this will display the no results text
@@ -158,6 +171,18 @@ class SearchViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Finds the matching [DisplayUser] for a user.
+     */
+    fun getDisplayUser(user: User): DisplayUser? {
+        for(displayUser in displaySearchResults.value) {
+            if(user.uid == displayUser.uid) {
+                return displayUser
+            }
+        }
+        return null
     }
 
     /**
