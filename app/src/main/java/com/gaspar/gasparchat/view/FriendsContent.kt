@@ -9,11 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Card
-import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
@@ -22,7 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gaspar.gasparchat.R
-import com.gaspar.gasparchat.model.User
+import com.gaspar.gasparchat.model.DisplayUser
 import com.gaspar.gasparchat.viewmodel.FriendsViewModel
 
 @ExperimentalAnimationApi
@@ -53,10 +50,10 @@ fun FriendsBody(viewModel: FriendsViewModel) {
         if(contacts.value.isNotEmpty()) {
             //there are contacts
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                itemsIndexed(contacts.value) { position, contactUser ->
+                itemsIndexed(contacts.value) { position, friend ->
                     FriendCard(
                         position = position,
-                        contactUser = contactUser,
+                        friend = friend,
                         onContactClicked = viewModel::onFriendClicked
                     )
                 }
@@ -78,7 +75,7 @@ fun FriendsBody(viewModel: FriendsViewModel) {
 @Composable
 fun FriendCard(
     position: Int,
-    contactUser: User,
+    friend: DisplayUser,
     onContactClicked: (Int) -> Unit
 ) {
     Card(
@@ -93,14 +90,17 @@ fun FriendCard(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.align(Alignment.CenterStart)
             ) {
-                //TODO: when implemented, this can be replaced with profile picture
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = stringResource(id = R.string.search_profile_image_description, formatArgs = arrayOf(contactUser.displayName)),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                if(friend.profilePicture != null) {
+                    ProfilePicture(
+                        picture = friend.profilePicture,
+                        displayName = friend.displayName
+                    )
+                } else {
+                    //use default picture
+                    DefaultProfilePicture(displayName = friend.displayName)
+                }
                 Text(
-                    text = contactUser.displayName,
+                    text = friend.displayName,
                     style = MaterialTheme.typography.subtitle1,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )

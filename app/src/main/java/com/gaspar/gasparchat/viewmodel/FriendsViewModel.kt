@@ -4,9 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.gaspar.gasparchat.*
-import com.gaspar.gasparchat.model.ChatRoomRepository
-import com.gaspar.gasparchat.model.User
-import com.gaspar.gasparchat.model.UserRepository
+import com.gaspar.gasparchat.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,20 +17,20 @@ import javax.inject.Inject
 @HiltViewModel
 class FriendsViewModel @Inject constructor(
     val snackbarDispatcher: SnackbarDispatcher,
-    private val navigationDispatcher: NavigationDispatcher,
     private val userRepository: UserRepository,
     private val chatRoomRepository: ChatRoomRepository,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val pictureRepository: PictureRepository
 ): ViewModel() {
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
 
     /**
-     * The current users contact list.
+     * The current users friend list that can be displayed.
      */
-    private val _friends = MutableStateFlow(listOf<User>())
-    val friends: StateFlow<List<User>> = _friends
+    private val _friends = MutableStateFlow(listOf<DisplayUser>())
+    val friends: StateFlow<List<DisplayUser>> = _friends
 
     private val _currentUser = MutableStateFlow(User())
     val currentUser: StateFlow<User> = _currentUser
@@ -60,12 +58,19 @@ class FriendsViewModel @Inject constructor(
                 _currentUser.value = currentUserResult.result!!.toObjects(User::class.java)[0]
                 //get contact users
                 if(currentUser.value.friends.isNotEmpty()) {
+                    //friend list has no duplicates, its safe to get them in bulk
                     userRepository.getUsersByUid(currentUser.value.friends).addOnCompleteListener { contactsQueryResult ->
-                        _loading.value = false
                         if(contactsQueryResult.isSuccessful && contactsQueryResult.result != null) {
+                            //friend USER objects received (these are not the display user objects)
                             val rawData = contactsQueryResult.result!!.toObjects(User::class.java)
-                            _friends.value = rawData.sortedBy { it.displayName }
+                            //launch async operation get gets display users
+                            val onCompletion = { displayUsers: List<DisplayUser> ->
+                                _loading.value = false
+                                _friends.value = displayUsers.sortedBy { it.displayName }
+                            }
+                            createDisplayUsers(pictureRepository, rawData, onCompletion)
                         } else {
+                            _loading.value = false
                             //failed to get contacts
                             showFriendsErrorSnackbar()
                         }

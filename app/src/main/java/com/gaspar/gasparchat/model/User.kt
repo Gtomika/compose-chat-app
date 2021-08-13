@@ -4,8 +4,8 @@ import com.gaspar.gasparchat.FirestoreConstants
 import com.google.firebase.firestore.PropertyName
 
 /**
- * Represents public information about a registered user, hence it does not contain email and other
- * stuff that is present in a firebase user object.
+ * Represents a user of the application. Not the same as the firebase user, although they share
+ * the same UID.
  */
 data class User(
 

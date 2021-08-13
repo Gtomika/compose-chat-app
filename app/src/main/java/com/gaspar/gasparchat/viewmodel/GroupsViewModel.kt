@@ -21,7 +21,8 @@ class GroupsViewModel @Inject constructor(
     private val chatRoomRepository: ChatRoomRepository,
     val snackbarDispatcher: SnackbarDispatcher,
     private val firebaseAuth: FirebaseAuth,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val pictureRepository: PictureRepository
 ): ViewModel() {
 
     private val _loading = MutableStateFlow(false)
@@ -60,11 +61,9 @@ class GroupsViewModel @Inject constructor(
         val userUid = firebaseAuth.currentUser!!.uid
         chatRoomRepository.getGroupsOfUser(userUid).addOnCompleteListener { groupsResult ->
             if(groupsResult.isSuccessful && groupsResult.result != null) {
-                val rawData = groupsResult.result!!.toObjects(ChatRoom::class.java)
-                val groupsSorted = rawData.sortedBy { it.chatRoomName }
-
+                val groups = groupsResult.result!!.toObjects(ChatRoom::class.java)
                 val adminUIDs = mutableListOf<String>()
-                for(group in groupsSorted) {
+                for(group in groups) {
                     adminUIDs.add(group.admin!!)
                 }
                 //admins may have REPETITIONS, get the individually
@@ -84,9 +83,17 @@ class GroupsViewModel @Inject constructor(
                                     snackbarDispatcher.createOnlyMessageSnackbar(message)
                                     snackbarDispatcher.showSnackbar()
                                 } else {
-                                    //no fails, create DisplayChatRoom objects
-                                    _groups.value = mergeChatRoomsAndUsers(groupsSorted, admins)
-                                    _loading.value = false
+                                    //no fails, create DisplayChatRoom objects (async)
+                                     val onCompletion = { displayChatRooms: List<DisplayChatRoom> ->
+                                         _groups.value = displayChatRooms.sortedBy { it.chatRoomName }
+                                         _loading.value = false
+                                     }
+                                     mergeChatRoomsAndUsers(
+                                         chatRooms = groups,
+                                         users = admins,
+                                         onCompletion = onCompletion,
+                                         pictureRepository = pictureRepository
+                                     )
                                 }
                             }
                         } else {

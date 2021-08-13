@@ -138,7 +138,7 @@ object FirestoreConstants {
 
 object PictureConstants {
 
-    const val PROFILE_PICTURE_SIZE = 75
+    const val PROFILE_PICTURE_SIZE = 40
 
     const val PROFILE_PICTURES_FOLDER = "profilePictures"
 
@@ -160,7 +160,7 @@ object PictureConstants {
      * The maximum mount of images (of a category, for example profile pictures) that will be cached.
      * Replacement strategy is used is a new image is attempted to be cached over this limit.
      */
-    const val MAX_CACHED_PICTURES = 10
+    const val MAX_CACHED_PICTURES = 50
 }
 
 /**

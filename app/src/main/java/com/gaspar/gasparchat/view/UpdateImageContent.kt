@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.gaspar.gasparchat.PictureConstants
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.viewmodel.UpdatePictureViewModel
 import com.gaspar.gasparchat.viewmodel.VoidMethod
@@ -102,12 +103,7 @@ fun UpdatePicturePreviewAndDelete(viewModel: UpdatePictureViewModel) {
                 val hasDefaultPicture = viewModel.hasDefaultPicture.collectAsState()
                 if(hasDefaultPicture.value) {
                     //this user has the default picture
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = stringResource(id = R.string.search_profile_image_description,
-                            formatArgs = arrayOf(displayName.value)),
-                        modifier = Modifier.padding(end = 8.dp, top = 8.dp, bottom = 8.dp)
-                    )
+                    DefaultProfilePicture(displayName = displayName.value)
                 } else {
                     //no default picture, custom one is in picture state
                     val picture = viewModel.picture.collectAsState()
@@ -193,6 +189,19 @@ fun ProfilePicture(
         modifier = Modifier
             .padding(horizontal = 2.dp, vertical = 2.dp)
             .clip(CircleShape)
-            .requiredSize(40.dp)
+            .requiredSize(PictureConstants.PROFILE_PICTURE_SIZE.dp)
+    )
+}
+
+@Composable
+fun DefaultProfilePicture(displayName: String) {
+    Icon(
+        imageVector = Icons.Default.Person,
+        contentDescription = stringResource(id = R.string.search_profile_image_description,
+            formatArgs = arrayOf(displayName)),
+        modifier = Modifier
+            .padding(end = 8.dp, top = 8.dp, bottom = 8.dp)
+            .clip(CircleShape)
+            .requiredSize(PictureConstants.PROFILE_PICTURE_SIZE.dp)
     )
 }

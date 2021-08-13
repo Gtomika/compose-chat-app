@@ -1,6 +1,7 @@
 package com.gaspar.gasparchat.view
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -57,7 +58,7 @@ fun ChatRoomContent(viewModel: ChatRoomViewModel) {
     ) { paddingValues ->
         Box(modifier = Modifier
             .padding(paddingValues)
-            .alpha(if(loading.value) 0.3f else 1.0f))
+            .alpha(if (loading.value) 0.3f else 1.0f))
         {
             ChatRoomBody(viewModel = viewModel, lazyColumnState)
         }
@@ -72,8 +73,9 @@ fun ChatRoomTopBar(viewModel: ChatRoomViewModel) {
     val showMenu = remember { mutableStateOf(false) }
     val showUnblock = viewModel.blockedMembersPresent.collectAsState()
     val users = viewModel.users.collectAsState()
-    val localUser = viewModel.localUser.collectAsState()
+    val localUser = viewModel.localDisplayUser.collectAsState()
     val title = viewModel.title.collectAsState()
+    val chatRoomImage = viewModel.chatRoomImage.collectAsState()
 
     TopAppBar(
         navigationIcon = {
@@ -84,7 +86,12 @@ fun ChatRoomTopBar(viewModel: ChatRoomViewModel) {
                 )
             }
         },
-        title = { Text(text = title.value) },
+        title = {
+            Text(text = title.value, modifier = Modifier.padding(end = 16.dp))
+            if(chatRoomImage.value != null) {
+                ProfilePicture(picture = chatRoomImage.value!!, displayName = "")
+            }
+        },
         actions = {
             IconButton(onClick = {
                 showMenu.value = !showMenu.value
@@ -99,9 +106,9 @@ fun ChatRoomTopBar(viewModel: ChatRoomViewModel) {
                 onDismissRequest = { showMenu.value = false }
             ) {
                 //if this is a group, add one-to-one chat option with all other users
-                if(!viewModel.isOneToOneChat()) {
+                if(!viewModel.isOneToOneChat() && localUser.value != null) {
                      for(user in users.value) {
-                         if(user.uid != localUser.value.uid) {
+                         if(user.uid != localUser.value!!.uid) {
                              DropdownMenuItem(onClick = {
                                  showMenu.value = false
                                  viewModel.onDropDownInitiateChatClicked(user.uid)
@@ -181,8 +188,10 @@ fun MessagesContent(
     lazyColumnState: LazyListState
 ) {
     val messages = viewModel.messages.collectAsState()
+    val localDisplayUser = viewModel.localDisplayUser.collectAsState()
+    val loading = viewModel.loading.collectAsState()
 
-    if(messages.value.isNotEmpty()) {
+    if(messages.value.isNotEmpty() && !loading.value) {
         //there are messages
         LazyColumn(
             state = lazyColumnState,
@@ -190,26 +199,28 @@ fun MessagesContent(
             verticalArrangement = Arrangement.Bottom
         ) {
             itemsIndexed(messages.value) { position, message ->
-                val localMessage = message.senderUid == viewModel.localUser.value.uid
+                val localMessage = message.senderUid == localDisplayUser.value!!.uid
                 if(localMessage) {
                     LocalMessageContent(
                         position = position,
                         messageText = message.messageText,
-                        senderDisplayName = viewModel.localUser.value.displayName,
+                        senderDisplayName = localDisplayUser.value!!.displayName,
                         sendTime = message.messageTime,
                         deleted = message.deleted,
-                        onMessageDeleted = viewModel::onMessageDeleted
+                        onMessageDeleted = viewModel::onMessageDeleted,
+                        profilePicture = localDisplayUser.value!!.profilePicture
                     )
                 } else {
-                    val senderDisplayName = remember(message) { mutableStateOf(viewModel.findDisplayNameForUid(message.senderUid)) }
                     val blocked = mutableStateOf(isBlockedBy(viewModel.localUser.value, message.senderUid))
+                    val displayUser = remember(message) { mutableStateOf(viewModel.findDisplayUserForUid(message.senderUid)) }
                     MessageContent(
                         position = position,
                         messageText = message.messageText,
-                        senderDisplayName = senderDisplayName.value,
+                        senderDisplayName = displayUser.value.displayName,
                         sendTime = message.messageTime,
                         deleted = message.deleted,
-                        blocked = blocked.value
+                        blocked = blocked.value,
+                        profilePicture = displayUser.value.profilePicture
                     )
                 }
             }
@@ -238,7 +249,8 @@ fun PreviewMessageContent() {
         senderDisplayName = "Teszt Géza",
         sendTime = message.messageTime,
         deleted = false,
-        blocked = false
+        blocked = false,
+        profilePicture = null
     )
 }
 
@@ -252,7 +264,8 @@ fun MessageContent(
     senderDisplayName: String,
     sendTime: Date,
     deleted: Boolean,
-    blocked: Boolean
+    blocked: Boolean,
+    profilePicture: Bitmap?
 ) {
     val formatter = remember { SimpleDateFormat("yyyy.MM.dd '-' HH:mm a", Locale.ENGLISH) }
     val formattedSendTime = remember(sendTime) { formatter.format(sendTime) }
@@ -266,15 +279,14 @@ fun MessageContent(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .align(Alignment.Start),
-            verticalAlignment = Alignment.Top,
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
         ) {
-            //TODO can be replaced with profile picture
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = stringResource(id = R.string.chat_profile_picture),
-                modifier = Modifier.padding(top = 16.dp, end = 8.dp)
-            )
+            if(profilePicture != null) {
+                ProfilePicture(picture = profilePicture, displayName = senderDisplayName)
+            } else {
+                DefaultProfilePicture(displayName = senderDisplayName)
+            }
             Column(verticalArrangement = Arrangement.Top) {
                 //display name of sender
                 Text(
@@ -337,7 +349,8 @@ fun PreviewLocalMessageContent() {
         senderDisplayName = "Gáspár Tamás",
         sendTime = message.messageTime,
         deleted = false,
-        onMessageDeleted = {}
+        onMessageDeleted = {},
+        profilePicture = null
     )
 }
 
@@ -349,7 +362,8 @@ fun LocalMessageContent(
     senderDisplayName: String,
     sendTime: Date,
     deleted: Boolean,
-    onMessageDeleted: (Int) -> Unit
+    onMessageDeleted: (Int) -> Unit,
+    profilePicture: Bitmap?
 ) {
     val formatter = remember { SimpleDateFormat("yyyy.MM.dd '-' HH:mm a", Locale.ENGLISH) }
     val formattedSendTime = remember(sendTime) { formatter.format(sendTime) }
@@ -363,12 +377,14 @@ fun LocalMessageContent(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .align(Alignment.End),
-            verticalAlignment = Alignment.Top,
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.End,
         ) {
             Column(
                 verticalArrangement = Arrangement.Top,
-                modifier = Modifier.weight(0.9f)
+                modifier = Modifier
+                    .weight(0.9f)
+                    .padding(end = 8.dp)
             ) {
                 //display name of sender
                 Text(
@@ -418,13 +434,13 @@ fun LocalMessageContent(
                         .padding(top = 2.dp)
                 )
             }
-            //TODO can be replaced with profile picture
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = stringResource(id = R.string.chat_profile_picture),
-                modifier = Modifier.padding(top = 16.dp, start = 8.dp)
-                    .weight(0.1f)
-            )
+            Box(modifier = Modifier.weight(0.1f)) {
+                if(profilePicture != null) {
+                    ProfilePicture(picture = profilePicture, displayName = senderDisplayName)
+                } else {
+                    DefaultProfilePicture(displayName = senderDisplayName)
+                }
+            }
         }
     }
 }

@@ -5,8 +5,7 @@ import androidx.lifecycle.ViewModel
 import com.gaspar.gasparchat.BlocklistChangedEvent
 import com.gaspar.gasparchat.R
 import com.gaspar.gasparchat.SnackbarDispatcher
-import com.gaspar.gasparchat.model.User
-import com.gaspar.gasparchat.model.UserRepository
+import com.gaspar.gasparchat.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +19,8 @@ import javax.inject.Inject
 class BlockedViewModel @Inject constructor(
     val snackbarDispatcher: SnackbarDispatcher,
     private val userRepository: UserRepository,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val pictureRepository: PictureRepository
 ): ViewModel() {
 
     private val _loading = MutableStateFlow(false)
@@ -29,8 +29,8 @@ class BlockedViewModel @Inject constructor(
     private val _currentUser = MutableStateFlow(User())
     val currentUser: StateFlow<User> = _currentUser
 
-    private val _blockedUsers = MutableStateFlow(listOf<User>())
-    val blockedUsers: StateFlow<List<User>> = _blockedUsers
+    private val _blockedUsers = MutableStateFlow(listOf<DisplayUser>())
+    val blockedUsers: StateFlow<List<DisplayUser>> = _blockedUsers
 
     init {
         EventBus.getDefault().register(this)
@@ -59,11 +59,17 @@ class BlockedViewModel @Inject constructor(
                 //get contact users
                 if(_currentUser.value.blockedUsers.isNotEmpty()) {
                     userRepository.getUsersByUid(currentUser.value.blockedUsers).addOnCompleteListener { blocksQueryResult ->
-                        _loading.value = false
                         if(blocksQueryResult.isSuccessful && blocksQueryResult.result != null) {
+                            //USER objects queried.
                             val rawData = blocksQueryResult.result!!.toObjects(User::class.java)
-                            _blockedUsers.value = rawData.sortedBy { it.displayName }
+                            //start async operation ot convert them into display user objects
+                            val onCompletion = { displayUsers: List<DisplayUser> ->
+                                _loading.value = false
+                                _blockedUsers.value = displayUsers.sortedBy { it.displayName }
+                            }
+                            createDisplayUsers(pictureRepository, rawData, onCompletion)
                         } else {
+                            _loading.value = false
                             //failed to get blocklist
                             showBlocklistLoadErrorSnackbar()
                         }
@@ -95,7 +101,7 @@ class BlockedViewModel @Inject constructor(
                     //the database was updated, now update the state
                     _currentUser.value = currentUser.value.copy(blockedUsers = currentUser.value.blockedUsers - unblockUid)
                     //update list
-                    val mutableBlockList = mutableListOf<User>()
+                    val mutableBlockList = mutableListOf<DisplayUser>()
                     var indexOfUnblocked = 0
                     blockedUsers.value.forEachIndexed { index, blockedUser ->
                         if(blockedUser.uid == unblockUid) {
@@ -121,8 +127,8 @@ class BlockedViewModel @Inject constructor(
             }
     }
 
-    private fun reBlockUser(indexOfUnblocked: Int, unblockedUser: User) {
-        val mutableBlockList = mutableListOf<User>()
+    private fun reBlockUser(indexOfUnblocked: Int, unblockedUser: DisplayUser) {
+        val mutableBlockList = mutableListOf<DisplayUser>()
         mutableBlockList.addAll(blockedUsers.value) //this does not include unblocked user anymore
         //re add it
         mutableBlockList.add(indexOfUnblocked, unblockedUser)

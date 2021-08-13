@@ -20,6 +20,7 @@ class ChatsViewModel @Inject constructor(
     private val userRepository: UserRepository,
     @ApplicationContext private val context: Context,
     private val chatRoomRepository: ChatRoomRepository,
+    private val pictureRepository: PictureRepository
 ): ViewModel() {
 
     private val _loading = MutableStateFlow(false)
@@ -60,34 +61,34 @@ class ChatsViewModel @Inject constructor(
     private fun getCurrentUserAndChats() {
         _loading.value = true
         userRepository.getCurrentUser().addOnCompleteListener { currentUserResult ->
-            _loading.value = false
             if(currentUserResult.isSuccessful && currentUserResult.result != null) {
                 _currentUser.value = currentUserResult.result!!.toObjects(User::class.java)[0]
                 //get all chat room of this user
                 chatRoomRepository.getChatRoomsOfUser(currentUser.value.uid).addOnCompleteListener { chatsResult ->
                     if(chatsResult.isSuccessful && chatsResult.result != null) {
-                        val rawData = chatsResult.result!!.toObjects(ChatRoom::class.java)
-                        val chats = sortChatRoomsByActivity(rawData)
+                        var chats = chatsResult.result!!.toObjects(ChatRoom::class.java)
+                        //only keep the ones with messages
+                        chats = getChatRoomsWithMessages(chats)
                         //now get other user UIDs
                         val otherUsersIds = getOtherUsers(chats)
                         //other users may have repetition, must query individually
                         var queryCounter = 0
                         var queryFailCounter = 0
-                        val otherUsers = mutableListOf<User>()
+                        val otherUsers = Array(otherUsersIds.size) { User() }
                         for(otherUserUid in otherUsersIds) {
                             userRepository.getUserById(otherUserUid).addOnCompleteListener { userResult ->
                                 queryCounter++
                                 if(userResult.isSuccessful && userResult.result != null) {
-                                    otherUsers.add(userResult.result!!.toObject(User::class.java)!!)
-                                    if(queryCounter == otherUsers.size) {
+                                    //add this new user to the SAME index it originally was
+                                    otherUsers[otherUsersIds.indexOf(otherUserUid)] = userResult.result!!.toObject(User::class.java)!!
+                                    if(queryCounter == otherUsersIds.size) {
                                         //all users have been queried, but maybe some failed
                                         if(queryFailCounter > 0) {
                                             _loading.value = false
                                             showChatLoadingErrorSnackbar()
                                         } else {
-                                            //no fails, create DisplayChatRoom objects
-                                            _chats.value = mergeChatRoomsAndUsers(chats, otherUsers)
-                                            _loading.value = false
+                                            //no fails, all users and chats are ready, create DisplayChatRoom objects (async)
+                                            createDisplayChatRooms(chats, otherUsers.toList())
                                         }
                                     }
                                 } else {
@@ -107,6 +108,24 @@ class ChatsViewModel @Inject constructor(
                 showChatLoadingErrorSnackbar()
             }
         }
+    }
+
+    /**
+     * Merges the [ChatRoom] and the other [User] objects, while getting the images. When finished
+     * the result is sorted and shown.
+     */
+    private fun createDisplayChatRooms(chats: List<ChatRoom>, otherUsers: List<User>) {
+        val onCompletion = { displayChatRooms: List<DisplayChatRoom> ->
+            //sort by "activity"
+            _chats.value = displayChatRooms.sortedByDescending { it.lastMessageTime }
+            _loading.value = false
+        }
+        mergeChatRoomsAndUsers(
+            chatRooms = chats,
+            users = otherUsers,
+            onCompletion = onCompletion,
+            pictureRepository = pictureRepository
+        )
     }
 
     /**
@@ -138,19 +157,18 @@ class ChatsViewModel @Inject constructor(
     }
 
     /**
-     * Sorts by the time of the last message. Chat rooms with no message will be ignored.
+     * Selects only the chat rooms which have at least 1 message.
      * @param rawData The chat rooms as received from firestore.
-     * @return The sorted chat rooms, all of them with at least one message.
+     * @return The chat rooms all of them with at least one message.
      */
-    private fun sortChatRoomsByActivity(rawData: List<ChatRoom>): List<ChatRoom> {
+    private fun getChatRoomsWithMessages(rawData: List<ChatRoom>): List<ChatRoom> {
         val chatsWithMessage = mutableListOf<ChatRoom>()
         for(chatRoom in rawData) {
             if(chatRoom.lastMessageTime != null && chatRoom.lastMessageText != null) {
                 chatsWithMessage.add(chatRoom)
             }
         }
-        //sort the chat rooms by message time
-        return chatsWithMessage.sortedByDescending { it.lastMessageTime }
+        return chatsWithMessage
     }
 
     private fun showChatLoadingErrorSnackbar() {

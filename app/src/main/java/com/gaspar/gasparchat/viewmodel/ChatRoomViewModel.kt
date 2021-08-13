@@ -1,12 +1,14 @@
 package com.gaspar.gasparchat.viewmodel
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.annotation.Keep
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.lifecycle.ViewModel
 import com.gaspar.gasparchat.*
 import com.gaspar.gasparchat.model.*
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +26,9 @@ class ChatRoomViewModel @Inject constructor(
     private val chatRoomRepository: ChatRoomRepository,
     private val userRepository: UserRepository,
     val snackbarDispatcher: SnackbarDispatcher,
-    private val navigationDispatcher: NavigationDispatcher
+    private val navigationDispatcher: NavigationDispatcher,
+    private val pictureRepository: PictureRepository,
+    private val firebaseAuth: FirebaseAuth
 ): ViewModel() {
 
     /**
@@ -45,6 +49,13 @@ class ChatRoomViewModel @Inject constructor(
     val chatRoom: StateFlow<ChatRoom> = _chatRoom
 
     /**
+     * Image displayed in the top app bar. For private chats, this is the other users image,
+     * for groups it is the group image. If this is null, then nothing is displayed.
+     */
+    private val _chatRoomImage = MutableStateFlow<Bitmap?>(null)
+    val chatRoomImage: StateFlow<Bitmap?> = _chatRoomImage
+
+    /**
      * Messages of the current chat room. This is more then just the message UIDs in the [ChatRoom]
      * objects, these are the [Message] objects.
      */
@@ -52,17 +63,28 @@ class ChatRoomViewModel @Inject constructor(
     val messages: StateFlow<List<Message>> = _messages
 
     /**
-     * Users in this chat room including the local user. The local user is also stored in [localUser]. These are more then just
-     * UID-s, these are the [User] objects.
+     * [User]s in this chat room including the local user. The local user is also stored in [localUser].
      */
     private val _users = MutableStateFlow(listOf<User>())
     val users: StateFlow<List<User>> = _users
 
     /**
+     * The [DisplayUser]s in the chat room.
+     */
+    private val _displayUsers = MutableStateFlow(listOf<DisplayUser>())
+    val displayUsers: StateFlow<List<DisplayUser>> = _displayUsers
+
+    /**
      * The [User] in the chat room who is currently logged in, in other words the one using the app.
      */
-    private val _localUser = MutableStateFlow(User())
+    private val _localUser = MutableStateFlow<User>(User())
     val localUser: StateFlow<User> = _localUser
+
+    /**
+     * The [DisplayUser] object of the [localUser]. Can be used to fetch local users image and name fast.
+     */
+    private val _localDisplayUser = MutableStateFlow<DisplayUser?>(null)
+    val localDisplayUser: StateFlow<DisplayUser?> = _localDisplayUser
 
     /**
      * Stores if ANY OTHER chat room members are blocked for [localUser].
@@ -112,12 +134,10 @@ class ChatRoomViewModel @Inject constructor(
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onChatRoomChanged(event: ChatRoomChangedEvent) {
         Log.d(TAG, "Chat room change event arrived, new chat room UID is ${event.chatRoomId}")
-        //set loading process amount
+        //set loading process amount: number of separate async tasks that must finish
         loadingProcessAmount = 2
         //indicate loading (it will disappear once loading process amount resets to 0)
         _loading.value = true
-        //load current user (async)
-        loadLocalUserAndAddChatRoom()
         //load all data about the chat room (async)
         getChatRoomAndMembers(event.chatRoomId)
         //navigate to chat room destination
@@ -175,27 +195,43 @@ class ChatRoomViewModel @Inject constructor(
     }
 
     /**
-     * Fetches the local user from firestore and adds this chat room to their chat room list,
-     * if not already present.
+     * Gets the local user from the list of obtained [DisplayUser] objects.
      */
-    private fun loadLocalUserAndAddChatRoom() {
-        userRepository.getCurrentUser().addOnCompleteListener { currentUserResult ->
-            if(currentUserResult.isSuccessful && currentUserResult.result != null) {
-                _localUser.value = currentUserResult.result!!.toObjects(User::class.java)[0]
-                EventBus.getDefault().post(LoadingFinishedEvent)
+    private fun findLocalDisplayUser() {
+        val localUserUid = firebaseAuth.currentUser!!.uid
+        _localDisplayUser.value = findDisplayUserForUid(localUserUid)
+    }
+
+    /**
+     * Gets the local user from the list of obtained [User] objects.
+     */
+    private fun findLocalUser() {
+        val localUserUid = firebaseAuth.currentUser!!.uid
+        _localUser.value = findUserForUid(localUserUid)
+    }
+
+    /**
+     * From the [chatRoom] and [displayUsers] this function assigns [chatRoomImage].
+     */
+    private fun findChatRoomImage() {
+        if(chatRoom.value.group) {
+            //TODO: group images are not implemented yet
+            _chatRoomImage.value = null
+        } else {
+            //get other users uid
+            val otherUserUid = if(localUser.value.uid == chatRoom.value.chatRoomUsers[0]) {
+                chatRoom.value.chatRoomUsers[1]
             } else {
-                //this task cannot go on
-                EventBus.getDefault().post(LoadingFinishedEvent)
-                val failMessage = context.getString(R.string.chat_load_fail)
-                snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
-                snackbarDispatcher.showSnackbar()
+                chatRoom.value.chatRoomUsers[0]
             }
+            val otherDisplayUser = findDisplayUserForUid(otherUserUid)
+            _chatRoomImage.value = otherDisplayUser.profilePicture
         }
     }
 
     /**
      * Queries the [ChatRoom] (including [Message]es) and its member [User]s from firestore (including [localUser]).
-     * While this is ongoing, the [loading] state will be set to true.
+     * After this, the images of the users will be obtained.
      */
     private fun getChatRoomAndMembers(chatRoomUid: String) {
         Log.d(TAG, "Getting Chat Room Object, User objects and Message objects, chat room Uid: $chatRoomUid")
@@ -214,7 +250,7 @@ class ChatRoomViewModel @Inject constructor(
                 snackbarDispatcher.showSnackbar()
             }
         }
-        //continue with getting the users
+        //continue with getting the users AND the messages (these can happen at the same time)
         chatRoomTask.continueWith { previousTask ->
             if(previousTask.isSuccessful) {
                 Log.d(TAG, "Continue with getting list of User objects...")
@@ -223,9 +259,21 @@ class ChatRoomViewModel @Inject constructor(
                 val usersTask = userRepository.getUsersByUid(chatRoom.value.chatRoomUsers)
                 usersTask.addOnCompleteListener { usersResult ->
                     if(usersResult.isSuccessful && usersResult.result != null) {
-                        Log.d(TAG, "Received User objects participating in this chat room!")
-                        //save users to state
+                        Log.d(TAG, "Received User objects participating in this chat room, converting to display users...")
+                        //save users, and start async conversion to display users
                         _users.value = usersResult.result!!.toObjects(User::class.java)
+                        findLocalUser()
+                        createDisplayUsers(
+                            pictureRepository = pictureRepository,
+                            users = users.value,
+                            onCompletion = { displayUsers: List<DisplayUser> ->
+                                _displayUsers.value = displayUsers
+                                findLocalDisplayUser()
+                                findChatRoomImage()
+                                Log.d(TAG, "Received DisplayUser objects.")
+                                EventBus.getDefault().post(LoadingFinishedEvent)
+                            }
+                        )
                     } else {
                         //failed, cannot continue
                         EventBus.getDefault().post(LoadingFinishedEvent)
@@ -233,28 +281,27 @@ class ChatRoomViewModel @Inject constructor(
                         snackbarDispatcher.showSnackbar()
                     }
                 }
-                //continue with getting the messages
-                usersTask.continueWith { _previousTask ->
-                    if(_previousTask.isSuccessful) {
-                        Log.d(TAG, "Continue with getting list of Message objects...")
-                        //continue only if the user query succeeded
-                        val messagesTask = chatRoomRepository.getMessagesOfChatRoom(chatRoomUid)
-                        messagesTask.addOnCompleteListener { messagesResult ->
-                            if(messagesResult.isSuccessful && messagesResult.result != null) {
-                                //messages, users and chat room is downloaded
-                                val queriedMessages = messagesResult.result!!.toObjects(Message::class.java)
-                                queriedMessages.sortBy { it.messageTime }
-                                _messages.value = queriedMessages
-                                Log.d(TAG, "Received Message objects that belong to this chat room, ${messages.value.size} in total.")
-                                //all good, this loading chain is done
-                            } else {
-                                //failed to get message objects
-                                snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
-                                snackbarDispatcher.showSnackbar()
-                            }
-                            EventBus.getDefault().post(LoadingFinishedEvent)
-                        }
+            }
+        }
+        chatRoomTask.continueWith { previousTask ->
+            if(previousTask.isSuccessful) {
+                Log.d(TAG, "Continue with getting list of Message objects...")
+                //continue only if the user query succeeded
+                val messagesTask = chatRoomRepository.getMessagesOfChatRoom(chatRoomUid)
+                messagesTask.addOnCompleteListener { messagesResult ->
+                    if(messagesResult.isSuccessful && messagesResult.result != null) {
+                        //messages, users and chat room is downloaded
+                        val queriedMessages = messagesResult.result!!.toObjects(Message::class.java)
+                        queriedMessages.sortBy { it.messageTime }
+                        _messages.value = queriedMessages
+                        Log.d(TAG, "Received Message objects that belong to this chat room, ${messages.value.size} in total.")
+                        //all good, this loading chain is done
+                    } else {
+                        //failed to get message objects
+                        snackbarDispatcher.createOnlyMessageSnackbar(failMessage)
+                        snackbarDispatcher.showSnackbar()
                     }
+                    EventBus.getDefault().post(LoadingFinishedEvent)
                 }
             }
         }
@@ -474,13 +521,22 @@ class ChatRoomViewModel @Inject constructor(
         }
     }
 
-    fun findDisplayNameForUid(userUid: String): String {
-        for(user in users.value) {
+    fun findDisplayUserForUid(userUid: String): DisplayUser {
+        for(user in displayUsers.value) {
             if(user.uid == userUid) {
-                return user.displayName
+                return user
             }
         }
-        return "Unknown"
+        return displayUsers.value[0] //should not get here
+    }
+
+    private fun findUserForUid(userUid: String): User {
+        for(user in users.value) {
+            if(user.uid == userUid) {
+                return user
+            }
+        }
+        return users.value[0] //should not get here
     }
 }
 

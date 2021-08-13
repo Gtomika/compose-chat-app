@@ -1,5 +1,6 @@
 package com.gaspar.gasparchat.view
 
+import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
@@ -18,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -61,6 +61,7 @@ fun ChatsBody(viewModel: ChatsViewModel) {
                         position = position,
                         otherUserName = chat.displayUserName,
                         lastMessageText = chat.lastMessageText!!,
+                        otherUserPicture = chat.chatRoomPicture,
                         onChatClicked = viewModel::onChatClicked
                     )
                 }
@@ -95,13 +96,14 @@ fun GroupChatCard(
             Row(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 8.dp)
             ) {
                 //TODO: when implemented, this can be replaced with other user picture
                 Icon(
                     painter = painterResource(id = R.drawable.icon_group),
-                    contentDescription = groupName,
-                    modifier = Modifier.padding(start = 16.dp)
+                    contentDescription = groupName
                 )
                 Text(
                     text = groupName,
@@ -112,7 +114,9 @@ fun GroupChatCard(
             Row(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp)
             ) {
                 Text(
                     text = stringResource(id = R.string.home_last_message),
@@ -139,6 +143,7 @@ fun OneToOneChatCard(
     position: Int,
     otherUserName: String,
     lastMessageText: String,
+    otherUserPicture: Bitmap?,
     onChatClicked: (Int) -> Unit
 ) {
     Card(
@@ -151,14 +156,15 @@ fun OneToOneChatCard(
             Row(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 8.dp)
             ) {
-                //TODO: when implemented, this can be replaced with other user picture
-                Icon(
-                    painter = painterResource(id = R.drawable.icon_chat),
-                    contentDescription = otherUserName,
-                    modifier = Modifier.padding(start = 16.dp)
-                )
+                if(otherUserPicture != null) {
+                    ProfilePicture(picture = otherUserPicture, displayName = otherUserName)
+                } else {
+                    DefaultProfilePicture(displayName = otherUserName)
+                }
                 Text(
                     text = otherUserName,
                     style = MaterialTheme.typography.subtitle1,
@@ -168,7 +174,9 @@ fun OneToOneChatCard(
             Row(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp)
             ) {
                 Text(
                     text = stringResource(id = R.string.home_last_message),

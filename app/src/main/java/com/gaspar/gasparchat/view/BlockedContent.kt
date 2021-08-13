@@ -17,7 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gaspar.gasparchat.R
-import com.gaspar.gasparchat.model.User
+import com.gaspar.gasparchat.model.DisplayUser
 import com.gaspar.gasparchat.viewmodel.BlockedViewModel
 import kotlin.reflect.KFunction1
 
@@ -74,7 +74,7 @@ fun BlockedBody(viewModel: BlockedViewModel) {
 @Composable
 fun BlockedCard(
     position: Int,
-    blockedUser: User,
+    blockedUser: DisplayUser,
     onUnblockClicked: KFunction1<Int, Unit>
 ) {
     Card(
@@ -88,12 +88,15 @@ fun BlockedCard(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.align(Alignment.CenterStart)
             ) {
-                //TODO: when implemented, this can be replaced with profile picture
-                Icon(
-                    painter = painterResource(id = R.drawable.icon_block),
-                    contentDescription = stringResource(id = R.string.search_profile_image_description, formatArgs = arrayOf(blockedUser.displayName)),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                if(blockedUser.profilePicture != null) {
+                    ProfilePicture(
+                        picture = blockedUser.profilePicture,
+                        displayName = blockedUser.displayName
+                    )
+                } else {
+                    //use default profile picture
+                    DefaultProfilePicture(displayName = blockedUser.displayName)
+                }
                 Text(
                     text = blockedUser.displayName,
                     style = MaterialTheme.typography.subtitle1,
